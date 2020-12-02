@@ -7,6 +7,7 @@ import Data.List.Split
 import qualified Data.Map as M
 import System.IO
 import Prelude hiding (max, min)
+import Text.Read
 
 data Rule = FrequencyRule
   { password :: Password,
@@ -22,22 +23,20 @@ main :: IO ()
 main = do
   handle <- openFile "src/AoC2/input.txt" ReadMode
   contents <- hGetContents handle
-  let rules = parseContents contents
-  print $ length $ filter satisfiesRule rules
-  print $ length $ filter satisfiesPositionRule rules
+  let thing = parseContentsMaybe contents
+  let satisfiesRuleCount = length . filter satisfiesRule <$> thing 
+  let satisfiesPositionRuleCount = length . filter satisfiesPositionRule <$> thing 
+  print satisfiesRuleCount
+  print satisfiesPositionRuleCount
 
-parseContents :: String -> [Rule]
-parseContents = map parseLine . lines
+parseContentsMaybe :: String -> Maybe [Rule]
+parseContentsMaybe = traverse parseLineMaybe . lines
 
-parseLine :: String -> Rule
-parseLine l = FrequencyRule t mn mx char
-  where
-    split = splitOn ": " l
-    r = splitOn " " $ head split
-    minMax = splitOn "-" $ head r
-    (mn :: Int, mx :: Int) = (read (head minMax), read (last minMax))
-    char = head $ last r
-    t = last split
+parseLineMaybe :: String -> Maybe Rule
+parseLineMaybe line = do
+  [minMax, ltr:_, pwd] <- pure $ words line
+  [mn, mx] <- pure $ splitOn "-" minMax
+  FrequencyRule pwd <$> readMaybe mn <*> readMaybe mx <*> pure ltr
 
 satisfiesRule :: Rule -> Bool
 satisfiesRule rule =
