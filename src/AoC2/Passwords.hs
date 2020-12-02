@@ -24,6 +24,7 @@ main = do
   contents <- hGetContents handle
   let rules = parseContents contents
   print $ length $ filter satisfiesRule rules
+  print $ length $ filter satisfiesPositionRule rules
 
 parseContents :: String -> [Rule]
 parseContents = map parseLine . lines
@@ -44,6 +45,14 @@ satisfiesRule rule =
   where
     freqMap = freqs $ password rule
     count = M.findWithDefault 0 (letter rule) freqMap
+
+satisfiesPositionRule :: Rule -> Bool
+satisfiesPositionRule r = length (filter (\c -> pwd !! c == ch) [pos1, pos2]) == 1
+  where
+    pos1 = min r - 1
+    pos2 = max r - 1
+    ch = letter r
+    pwd = password r
 
 freqs :: (Ord k, Num a) => [k] -> M.Map k a
 freqs xs = M.fromListWith (+) (map (,1) xs)
