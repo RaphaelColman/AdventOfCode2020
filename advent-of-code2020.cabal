@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4dd6fd190bcc268183d59f4b0ee483cfbbe1632a20740fe3c592838524c7f35f
+-- hash: fc57dda598f10e17872b9d29c235b56318e1459db194fdfe49052f9578ebd0e6
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -29,6 +29,8 @@ library
   exposed-modules:
       AoC1.Receipts
       AoC2.Passwords
+      AoC3.Trees
+      Common.Utils
       Lib
   other-modules:
       Paths_advent_of_code2020
@@ -37,6 +39,8 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , lens
+    , linear
     , split
   default-language: Haskell2010
 
@@ -51,6 +55,8 @@ executable advent-of-code2020-exe
       advent-of-code2020
     , base >=4.7 && <5
     , containers
+    , lens
+    , linear
     , split
   default-language: Haskell2010
 
@@ -66,5 +72,7 @@ test-suite advent-of-code2020-test
       advent-of-code2020
     , base >=4.7 && <5
     , containers
+    , lens
+    , linear
     , split
   default-language: Haskell2010
