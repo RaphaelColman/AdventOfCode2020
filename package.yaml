@@ -25,6 +25,7 @@ dependencies:
 - split
 - linear
 - lens
+- regex-tdfa
 
 library:
   source-dirs: src
@@ -50,3 +51,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - advent-of-code2020
+    - hspec
