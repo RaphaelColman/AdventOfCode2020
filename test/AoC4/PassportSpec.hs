@@ -44,8 +44,20 @@ spec = do
     describe "Hair colour test" $ do
         it "must be # followed by exactly 6 characters 0-9 or a-f" $ do
             hairColourValid "#123abc" `shouldBe` True
+            hairColourValid "#000000" `shouldBe` True
+            hairColourValid "#999999" `shouldBe` True
+            hairColourValid "#af09fa" `shouldBe` True
+            hairColourValid "#abcdef" `shouldBe` True
+
             hairColourValid "#123abz" `shouldBe` False
             hairColourValid "123abc" `shouldBe` False
+            hairColourValid "0000000" `shouldBe` False
+            hairColourValid "#bcdefg" `shouldBe` False
+            hairColourValid "#00000z" `shouldBe` False
+            hairColourValid "#000" `shouldBe` False
+            hairColourValid "#abcde" `shouldBe` False
+            hairColourValid "#abcdeff" `shouldBe` False
+            hairColourValid "##abcde" `shouldBe` False
 
     describe "Eye colour test" $ do
         it "must be exactly one of: amb blu brn gry grn hzl oth" $ do

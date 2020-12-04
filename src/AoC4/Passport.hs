@@ -8,25 +8,16 @@ import qualified Data.Set as S
 import System.IO
 import Text.Regex.TDFA
 
-mn :: IO ()
-mn = do
+main :: IO ()
+main = do
   handle <- openFile "src/AoC4/input.txt" ReadMode
   contents <- hGetContents handle
-  let mappedToFields = map fields $ splitToDocuments contents
-  print $ length $ filter validPassportFields mappedToFields
   let passports = map documentToPassport $ splitToDocuments contents
-  print "hello"
+  print $ length passports
+  print $ numberOfValidPassports passports
 
 splitToDocuments :: String -> [String]
 splitToDocuments = map (\c -> if c == "\n" then " " else c) . splitOn "\n\n"
-
-fields :: String -> S.Set String
-fields xs = S.fromList $ map getField $ words xs
-  where
-    getField = head . splitOn ":"
-
-validPassportFields :: S.Set String -> Bool
-validPassportFields = S.isSubsetOf requiredFields
 
 requiredFields :: S.Set String
 requiredFields = S.fromList ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
@@ -35,40 +26,38 @@ documentToPassport :: String -> Passport
 documentToPassport str = map parseField $ words str
 
 parseField :: String -> PassportField
-parseField str = case fieldName of
-  "byr" -> BYR value
-  "iyr" -> IYR value
-  "eyr" -> EYR value
-  "hgt" -> HGT value
-  "hcl" -> HCL value
-  "ecl" -> ECL value
-  "pid" -> PID value
-  "cid" -> CID value
+parseField str = (fieldName, value)
   where
     [fieldName, value] = splitOn ":" str
 
+numberOfValidPassports :: [Passport] -> Int
+numberOfValidPassports = length . filter passportIsValid
+
 passportIsValid :: Passport -> Bool
-passportIsValid = all valid
+passportIsValid psprt = hasAllRequiredFields psprt
+  && all passportFieldIsValid psprt
 
-hasAllRequiredFields :: [PassportField] -> Bool
-hasAllRequiredFields fields = S.fromList fields
+hasAllRequiredFields :: Passport -> Bool
+hasAllRequiredFields fields = S.isSubsetOf requiredFields presentFields
+  where presentFields = S.fromList $ map fst fields
 
-data PassportField = BYR String | IYR String | EYR String | HGT String | HCL String | ECL String | PID String | CID String deriving (Show)
+passportFieldIsValid :: PassportField -> Bool
+passportFieldIsValid pf = case fieldName of
+  "byr" -> birthyearValid value
+  "iyr" -> issueYearValid value
+  "eyr" -> expiryYearValid value
+  "hgt" -> heightValid value
+  "hcl" -> hairColourValid value
+  "ecl" -> eyeColourValid value
+  "pid" -> passportIdValid value
+  "cid" -> True
+  _ -> False
+  where fieldName = fst pf
+        value = snd pf
 
+type PassportField = (String, String)
 type Passport = [PassportField]
 
-class CanBeValid a where
-  valid :: a -> Bool
-
-instance CanBeValid PassportField where
-  valid (BYR s) = birthyearValid s
-  valid (IYR s) = issueYearValid s
-  valid (EYR s) = expiryYearValid s
-  valid (HGT s) = heightValid s
-  valid (HCL s) = hairColourValid s
-  valid (ECL s) = eyeColourValid s
-  valid (PID s) = passportIdValid s
-  valid (CID _) = True
 
 birthyearValid :: String -> Bool
 birthyearValid s =
@@ -106,7 +95,7 @@ heightValid str
 hairColourValid :: String -> Bool
 hairColourValid str = str =~ hairColourPattern :: Bool
   where
-    hairColourPattern = "#[1-9a-f]{6}"
+    hairColourPattern = "\\`#[0-9a-f]{6}\\'"
 
 eyeColourValid :: String -> Bool
 eyeColourValid str = str =~ eyeColourPattern :: Bool
