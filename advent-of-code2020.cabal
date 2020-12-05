@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c155881a516aca6d3db74c05d01f1ac3f98f91f28c4b8d928cb9567dfed58ac5
+-- hash: 0f0f44d4e44be2f3a065c4762507ec1baaa000ce71ad7519ac8530221a2b2b63
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -41,11 +41,14 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , directory
     , lens
     , linear
+    , reflection
     , regex-tdfa
     , sort
     , split
+    , text-format-simple
   default-language: Haskell2010
 
 executable advent-of-code2020-exe
@@ -59,11 +62,14 @@ executable advent-of-code2020-exe
       advent-of-code2020
     , base >=4.7 && <5
     , containers
+    , directory
     , lens
     , linear
+    , reflection
     , regex-tdfa
     , sort
     , split
+    , text-format-simple
   default-language: Haskell2010
 
 test-suite advent-of-code2020-test
@@ -80,10 +86,13 @@ test-suite advent-of-code2020-test
       advent-of-code2020
     , base >=4.7 && <5
     , containers
+    , directory
     , hspec
     , lens
     , linear
+    , reflection
     , regex-tdfa
     , sort
     , split
+    , text-format-simple
   default-language: Haskell2010

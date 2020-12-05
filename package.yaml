@@ -27,6 +27,9 @@ dependencies:
 - lens
 - regex-tdfa
 - sort
+- directory
+- text-format-simple
+- reflection
 
 library:
   source-dirs: src

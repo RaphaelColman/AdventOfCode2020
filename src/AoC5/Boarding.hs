@@ -1,14 +1,12 @@
 module AoC5.Boarding where
 
-import qualified Data.Map  as M
+import           Common.Utils
+import qualified Data.Map     as M
 import           Data.Sort
-import           System.IO (IOMode (ReadMode), hGetContents, openFile)
 
-
-main :: IO ()
-main = do
-  handle <- openFile "src/AoC5/input.txt" ReadMode
-  contents <- hGetContents handle
+aoC5 :: IO()
+aoC5 = do
+  contents <- getInputFile 5
   let ids = map seatId $ lines contents
   print $ maximum ids
   print $ sequence ids >>= findMissingRow
