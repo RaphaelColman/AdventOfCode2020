@@ -26,6 +26,7 @@ dependencies:
 - linear
 - lens
 - regex-tdfa
+- sort
 
 library:
   source-dirs: src
