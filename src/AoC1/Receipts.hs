@@ -1,16 +1,14 @@
 module AoC1.Receipts where
 
-import Data.List
-import System.IO
+import           Common.Utils
+import           Data.List
 
-main :: IO ()
-main = do
-  handle <- openFile "src/AoC1/input.txt" ReadMode  
-  contents <- hGetContents handle
+aoc1 :: IO ()
+aoc1 = do
+  contents <- getInputFile 1
   let expenses = parseContents contents
-  --let result = uncurry (*) $ goodPair $ pairs expenses
-  let result = multiplyTriplet $ goodTriplet $ triplets expenses
-  print result
+  print $ uncurry (*) $ goodPair $ pairs expenses
+  print $ multiplyTriplet $ goodTriplet $ triplets expenses
 
 parseContents :: String -> [Int]
 parseContents = map read . lines

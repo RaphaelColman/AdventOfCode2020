@@ -2,16 +2,15 @@
 
 module AoC4.Passport where
 
-import Data.Char
-import Data.List.Split
-import qualified Data.Set as S
-import System.IO
-import Text.Regex.TDFA
+import           Common.Utils
+import           Data.Char
+import           Data.List.Split
+import qualified Data.Set        as S
+import           Text.Regex.TDFA
 
-main :: IO ()
-main = do
-  handle <- openFile "src/AoC4/input.txt" ReadMode
-  contents <- hGetContents handle
+aoc4 :: IO ()
+aoc4 = do
+  contents <- getInputFile 4
   let passports = map documentToPassport $ splitToDocuments contents
   print $ length passports
   print $ numberOfValidPassports passports
@@ -51,7 +50,7 @@ passportFieldIsValid pf = case fieldName of
   "ecl" -> eyeColourValid value
   "pid" -> passportIdValid value
   "cid" -> True
-  _ -> False
+  _     -> False
   where fieldName = fst pf
         value = snd pf
 

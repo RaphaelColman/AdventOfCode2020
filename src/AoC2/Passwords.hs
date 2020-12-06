@@ -5,9 +5,9 @@ module AoC2.Passwords where
 
 import Data.List.Split
 import qualified Data.Map as M
-import System.IO
 import Prelude hiding (max, min)
-import Text.Read
+import Text.Read ( readMaybe )
+import Common.Utils
 
 data Rule = FrequencyRule
   { password :: Password,
@@ -19,10 +19,9 @@ data Rule = FrequencyRule
 
 type Password = String
 
-main :: IO ()
-main = do
-  handle <- openFile "src/AoC2/input.txt" ReadMode
-  contents <- hGetContents handle
+aoc2 :: IO ()
+aoc2 = do
+  contents <- getInputFile 2
   let thing = parseContentsMaybe contents
   let satisfiesRuleCount = length . filter satisfiesRule <$> thing 
   let satisfiesPositionRuleCount = length . filter satisfiesPositionRule <$> thing 

@@ -1,22 +1,20 @@
 module AoC3.Trees where
 
-import qualified Data.Set as S
-import Linear.V2
-import System.IO
-import Common.Utils
+import           Common.Utils
+import qualified Data.Set     as S
+import           Linear.V2
 
 type TreeSet = S.Set (V2 Int)
 
 data TreeMap = TM
   { _treeSet :: TreeSet,
-    _width :: Int,
-    _height :: Int
+    _width   :: Int,
+    _height  :: Int
   } deriving (Show, Eq)
 
-main :: IO ()
-main = do
-  handle <- openFile "src/AoC3/input.txt" ReadMode
-  contents <- hGetContents handle
+aoc3 :: IO ()
+aoc3 = do
+  contents <- getInputFile 3
   let tm = parseContents contents
   print $ numberOfTrees tm (V2 3 1)
   print $ numberOfTreesForSlopes tm [V2 1 1, V2 3 1, V2 5 1, V2 7 1, V2 1 2]
