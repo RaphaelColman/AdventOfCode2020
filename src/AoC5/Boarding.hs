@@ -4,8 +4,8 @@ import           Common.Utils
 import qualified Data.Map     as M
 import           Data.Sort
 
-aoC5 :: IO()
-aoC5 = do
+aoc5 :: IO()
+aoc5 = do
   contents <- getInputFile 5
   let ids = map seatId $ lines contents
   print $ maximum ids
