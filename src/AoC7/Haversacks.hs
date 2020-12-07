@@ -16,7 +16,8 @@ aoc7 = do
 type BagRules = M.Map Bag (M.Map Bag Int)
 
 data Bag = BG
-  { hue :: String,
+  { 
+    hue :: String,
     colour :: String
   }
   deriving (Show, Eq, Ord)
@@ -46,15 +47,14 @@ parseContainer str = BG hue colour
   where
     [hue, colour, _] = words str
 
-containersForBag :: Bag -> BagRules -> S.Set Bag
-containersForBag b = M.keysSet . M.filter (M.member b)
-
 recursiveContainersForBag :: Bag -> BagRules -> S.Set Bag
 recursiveContainersForBag = go S.empty
   where go found bg bgRules
             | null containers = found
             | otherwise = let allContainers = S.map (\x -> go containers x bgRules) containers in S.foldl S.union found allContainers
             where containers = containersForBag bg bgRules
+                  containersForBag b = M.keysSet . M.filter (M.member b)
+
 
 numberOfBagsForBag :: Bag -> BagRules -> Int
 numberOfBagsForBag = go 0
