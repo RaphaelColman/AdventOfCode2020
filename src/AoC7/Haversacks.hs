@@ -3,13 +3,15 @@ module AoC7.Haversacks where
 import Common.Utils
 import Data.List.Split
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 aoc7 :: IO ()
 aoc7 = do
   contents <- getInputFile 7
-  print $ parseInput contents
   let bagRules = parseInput contents
-  print $ M.lookup (BG "dotted" "black") bagRules
+  let bagToFind = BG "shiny" "gold"
+  print $ length $ recursiveContainersForBag bagToFind bagRules
+  print $ numberOfBagsForBag bagToFind bagRules
 
 type BagRules = M.Map Bag (M.Map Bag Int)
 
@@ -44,3 +46,21 @@ parseContainer str = BG hue colour
   where
     [hue, colour, _] = words str
 
+containersForBag :: Bag -> BagRules -> S.Set Bag
+containersForBag b = M.keysSet . M.filter (M.member b)
+
+recursiveContainersForBag :: Bag -> BagRules -> S.Set Bag
+recursiveContainersForBag = go S.empty
+  where go found bg bgRules
+            | null containers = found
+            | otherwise = let allContainers = S.map (\x -> go containers x bgRules) containers in S.foldl S.union found allContainers
+            where containers = containersForBag bg bgRules
+
+numberOfBagsForBag :: Bag -> BagRules -> Int
+numberOfBagsForBag = go 0
+  where go count bag' bagRules'
+          | null childBags = count
+          | otherwise = numberOfChildBags + grandChildren + count
+          where childBags = M.findWithDefault M.empty bag' bagRules' 
+                numberOfChildBags = M.foldl (+) 0 childBags
+                grandChildren = M.foldlWithKey (\agg bag'' number' -> agg + number' * go 0 bag'' bagRules') 0 childBags
