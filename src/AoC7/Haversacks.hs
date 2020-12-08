@@ -57,10 +57,9 @@ recursiveContainersForBag = go S.empty
 
 
 numberOfBagsForBag :: Bag -> BagRules -> Int
-numberOfBagsForBag = go 0
-  where go count bag' bagRules'
-          | null childBags = count
-          | otherwise = numberOfChildBags + grandChildren + count
-          where childBags = M.findWithDefault M.empty bag' bagRules' 
-                numberOfChildBags = M.foldl (+) 0 childBags
-                grandChildren = M.foldlWithKey (\agg bag'' number' -> agg + number' * go 0 bag'' bagRules') 0 childBags
+numberOfBagsForBag bag bagRules
+  | null childBags = 0
+  | otherwise = numberOfChildBags + grandChildren
+  where childBags = M.findWithDefault M.empty bag bagRules
+        numberOfChildBags = M.foldl (+) 0 childBags
+        grandChildren = M.foldlWithKey (\count bag' number' -> count + number' * numberOfBagsForBag bag' bagRules) 0 childBags
