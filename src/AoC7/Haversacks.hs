@@ -1,9 +1,9 @@
 module AoC7.Haversacks where
 
-import Common.Utils
-import Data.List.Split
-import qualified Data.Map as M
-import qualified Data.Set as S
+import           Common.Utils
+import           Data.List.Split
+import qualified Data.Map        as M
+import qualified Data.Set        as S
 
 aoc7 :: IO ()
 aoc7 = do
@@ -12,12 +12,14 @@ aoc7 = do
   let bagToFind = BG "shiny" "gold"
   print $ length $ recursiveContainersForBag bagToFind bagRules
   print $ numberOfBagsForBag bagToFind bagRules
+  let ancestors = M.lookup bagToFind $ allAncestors bagRules
+  print $ length <$> ancestors
 
 type BagRules = M.Map Bag (M.Map Bag Int)
 
 data Bag = BG
-  { 
-    hue :: String,
+  {
+    hue    :: String,
     colour :: String
   }
   deriving (Show, Eq, Ord)
@@ -35,7 +37,7 @@ parseLine str = (container, bags)
 parseBags :: String -> M.Map Bag Int
 parseBags str = case str of
   "no other bags." -> M.empty
-  _ -> M.fromList $ map toBagTuple bagList
+  _                -> M.fromList $ map toBagTuple bagList
   where
     bagList = splitOn "," str
     toBagTuple s =
@@ -63,3 +65,19 @@ numberOfBagsForBag bag bagRules
   where childBags = M.findWithDefault M.empty bag bagRules
         numberOfChildBags = M.foldl (+) 0 childBags
         grandChildren = M.foldlWithKey (\count bag' number' -> count + number' * numberOfBagsForBag bag' bagRules) 0 childBags
+
+
+type Graph v e = M.Map v (M.Map v e)
+
+allDescendants :: Ord v => Graph v e -> M.Map v (S.Set v)
+allDescendants graph = descendantMap
+  where
+    descendantMap = M.foldMapWithKey (\v _ -> S.insert v (M.findWithDefault S.empty v descendantMap)) <$> graph
+
+flipGraph :: Ord v => Graph v e -> Graph v e
+flipGraph mp = M.fromListWith M.union
+    [ (m, M.singleton n e) | (n, ms) <- M.toList mp , (m, e) <- M.toList ms ]
+
+
+allAncestors :: Ord v => Graph v e -> M.Map v (S.Set v)
+allAncestors = allDescendants . flipGraph
