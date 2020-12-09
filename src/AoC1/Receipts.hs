@@ -13,9 +13,6 @@ aoc1 = do
 parseContents :: String -> [Int]
 parseContents = map read . lines
 
-pairs :: [a] -> [(a, a)]
-pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
-
 triplets :: [a] -> [(a, a, a)]
 triplets l = [(x,y,z) | (x:ys) <- tails l, (y:zs) <- tails ys, z <- zs]
 
