@@ -14,6 +14,7 @@ aoc7 = do
   print $ numberOfBagsForBag bagToFind bagRules
   let ancestors = M.lookup bagToFind $ allAncestors bagRules
   print $ length <$> ancestors
+  print $ M.lookup bagToFind $ usageCounts bagRules
 
 type BagRules = M.Map Bag (M.Map Bag Int)
 
@@ -81,3 +82,8 @@ flipGraph mp = M.fromListWith M.union
 
 allAncestors :: Ord v => Graph v e -> M.Map v (S.Set v)
 allAncestors = allDescendants . flipGraph
+
+
+usageCounts :: (Ord v, Num e) => Graph v e -> M.Map v e
+usageCounts gr = usageMap
+  where usageMap = (\mp -> sum [n * (M.findWithDefault 0 v usageMap + 1) | (v, n) <- M.toList mp]) <$> gr
