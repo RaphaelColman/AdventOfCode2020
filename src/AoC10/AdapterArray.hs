@@ -6,6 +6,10 @@ import           Data.List.Split
 import qualified Data.Map        as M
 import           Data.Sort
 
+import qualified Data.IntMap     as IM
+import qualified Data.IntSet     as IS
+import Debug.Trace
+
 aoc10 :: IO ()
 aoc10 = do
   contents <- getInputFile 10
@@ -13,6 +17,7 @@ aoc10 = do
   let sortedAdapters = sort adapters
   print $ freqs $ joltDistribution sortedAdapters
   print $ combinations sortedAdapters
+  print $ findPathsFrom0 $ toAdapterIntSet sortedAdapters
 
 parseContents :: String -> [Int]
 parseContents = map read . lines
@@ -39,3 +44,31 @@ combinations :: [Int] -> Int
 combinations xs = product $ map (length . sumToWith3s2s1s) groupsOfOneLengths
   where distribution = joltDistribution xs
         groupsOfOneLengths = map length $ filter (all (== 1)) $ group distribution
+
+pathsToGoal :: IS.IntSet -> IM.IntMap Int
+pathsToGoal is = res
+  where res = IM.fromSet lookupOrCalculate is
+        lookupOrCalculate x = if x == goal
+                then 1
+                else sum [ IM.findWithDefault 0 (x + increment) res | increment <- [1,2,3]]
+        goal = IS.findMax is
+
+toAdapterIntSet :: [Int] -> IS.IntSet
+toAdapterIntSet xs = IS.union (IS.fromList [0, top + 3]) originals
+                where top = IS.findMax originals
+                      originals = IS.fromList xs
+
+findPathsFrom0 :: IS.IntSet -> Int
+findPathsFrom0 = IM.findWithDefault 0 0 . pathsToGoal
+
+fooPathToGoal :: IS.IntSet -> IM.IntMap [[Int]]
+fooPathToGoal is = res
+  where res = IM.fromSet lookUpOrCalculate is
+        lookUpOrCalculate x = if x == goal
+          then [[x]]
+          else let nextThreePaths = [ IM.findWithDefault [] (x+increment) res | increment <- [1,2,3]] 
+                in map (x :) $ concat nextThreePaths
+        goal = IS.findMax is
+
+fooFindPathsFrom0 :: IS.IntSet -> Maybe [[Int]]
+fooFindPathsFrom0 = IM.lookup 0 . fooPathToGoal
