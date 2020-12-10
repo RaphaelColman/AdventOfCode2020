@@ -1,9 +1,11 @@
+{-# LANGUAGE TupleSections #-}
 module Common.Utils where
 
 import Data.List
 import System.Directory
 import System.IO
 import Text.Format
+import qualified Data.Map as M
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]
 enumerateMultilineString str
@@ -29,3 +31,6 @@ getInputFile puzzleNumber = do
 
 pairs :: [a] -> [(a, a)]
 pairs l = [(x, y) | (x : ys) <- tails l, y <- ys]
+
+freqs :: (Ord k, Num a) => [k] -> M.Map k a
+freqs xs = M.fromListWith (+) (map (,1) xs)

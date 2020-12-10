@@ -3,11 +3,11 @@
 
 module AoC2.Passwords where
 
+import Common.Utils
 import Data.List.Split
 import qualified Data.Map as M
+import Text.Read (readMaybe)
 import Prelude hiding (max, min)
-import Text.Read ( readMaybe )
-import Common.Utils
 
 data Rule = FrequencyRule
   { password :: Password,
@@ -23,8 +23,8 @@ aoc2 :: IO ()
 aoc2 = do
   contents <- getInputFile 2
   let thing = parseContentsMaybe contents
-  let satisfiesRuleCount = length . filter satisfiesRule <$> thing 
-  let satisfiesPositionRuleCount = length . filter satisfiesPositionRule <$> thing 
+  let satisfiesRuleCount = length . filter satisfiesRule <$> thing
+  let satisfiesPositionRuleCount = length . filter satisfiesPositionRule <$> thing
   print satisfiesRuleCount
   print satisfiesPositionRuleCount
 
@@ -33,7 +33,7 @@ parseContentsMaybe = traverse parseLineMaybe . lines
 
 parseLineMaybe :: String -> Maybe Rule
 parseLineMaybe line = do
-  [minMax, ltr:_, pwd] <- pure $ words line
+  [minMax, ltr : _, pwd] <- pure $ words line
   [mn, mx] <- pure $ splitOn "-" minMax
   FrequencyRule pwd <$> readMaybe mn <*> readMaybe mx <*> pure ltr
 
@@ -51,6 +51,3 @@ satisfiesPositionRule r = length (filter (\c -> pwd !! c == ch) [pos1, pos2]) ==
     pos2 = max r - 1
     ch = letter r
     pwd = password r
-
-freqs :: (Ord k, Num a) => [k] -> M.Map k a
-freqs xs = M.fromListWith (+) (map (,1) xs)
