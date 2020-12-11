@@ -78,23 +78,24 @@ runUntilStableNew = go 0
 
 stepNew :: SeatingArea -> SeatingArea
 stepNew sa = M.mapWithKey foo sa
-    where foo coord value = convertSeatNew value $ visibleOccupiedSeats coord sa
+    where foo coord value = convertSeatNew value $ numberOfVisibleOccupiedSeats sa coord
 
-convertSeatNew :: Char -> [V2 Int] -> Char
+convertSeatNew :: Char -> Int -> Char
 convertSeatNew current occupied
-    | current == 'L' = if null occupied then '#' else current
-    | current == '#' = if length occupied >= 5 then 'L' else current
+    | current == 'L' = if occupied == 0 then '#' else current
+    | current == '#' = if occupied >= 5 then 'L' else current
     | otherwise = current
 
-allCoordsInDirection :: V2 Int -> SeatingArea -> V2 Int -> [V2 Int]
-allCoordsInDirection coord sa direction = unfoldr (\v -> let next = v + direction in if inBounds next sa then Just (next, next) else Nothing) coord
-
 numberOfVisibleOccupiedSeats :: SeatingArea -> V2 Int -> Int
-numberOfVisibleOccupiedSeats sa coord = length $ filter (=='#') $ map findNextSeatInDirection allDirections
-    where findNextSeatInDirection direction = undefined
+numberOfVisibleOccupiedSeats sa coord = length $ filter (=='#') $ map (travelToSeatOrEdgeInDirection sa coord) allDirections
   
-travelToSeatOrEdgeInDirection :: SeatingArea -> V2 Int -> Char
-travelToSeatOrEdgeInDirection sa start = undefined
+travelToSeatOrEdgeInDirection :: SeatingArea -> V2 Int -> V2 Int -> Char
+travelToSeatOrEdgeInDirection sa = go
+  where go start direction
+          | found `elem` "=L#" = found
+          | found == '.' = go next direction
+          where next = start + direction
+                found = M.findWithDefault '=' next sa -- '=' represents the boundary (not finding the coordinate)
 
 allDirections :: [V2 Int]
 allDirections =
@@ -107,29 +108,3 @@ allDirections =
     - unit _x + unit _y,
     - unit _x - unit _y
   ]
-
-visibleOccupiedSeats :: V2 Int -> SeatingArea -> [V2 Int]
-visibleOccupiedSeats coord sa = filter (isOccupied sa) $ nearestVisibleSeats coord sa
-
-
-nearestVisibleSeats :: V2 Int -> SeatingArea -> [V2 Int]
-nearestVisibleSeats coord sa = mapMaybe (find (isSeat sa) . allCoordsInDirection coord sa) allDirections
-
-isOccupied :: SeatingArea -> V2 Int -> Bool
-isOccupied sa coord =
-  let seat = M.findWithDefault '.' coord sa
-   in seat == '#'
-
-isSeat :: SeatingArea -> V2 Int -> Bool
-isSeat sa coord =
-  let seat = M.findWithDefault '.' coord sa
-   in seat == '#' || seat == 'L'
-
-inBounds :: V2 Int -> SeatingArea -> Bool
-inBounds (V2 x y) sa = and [xMin <= x, x <= xMax, yMin <= y, y <= yMax]
-  where
-    keys = M.keys sa
-    xMax = maximumBy (\a b -> compare (a ^. _x) (b ^. _x)) keys ^. _x
-    xMin = minimumBy (\a b -> compare (a ^. _x) (b ^. _x)) keys ^. _x
-    yMax = maximumBy (\a b -> compare (a ^. _y) (b ^. _y)) keys ^. _y
-    yMin = minimumBy (\a b -> compare (a ^. _y) (b ^. _y)) keys ^. _y
