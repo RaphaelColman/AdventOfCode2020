@@ -1,11 +1,15 @@
 {-# LANGUAGE TupleSections #-}
+
 module Common.Utils where
 
+import Control.Lens
 import Data.List
+import Data.List.Split
+import qualified Data.Map as Map
+import Linear.V2
 import System.Directory
 import System.IO
 import Text.Format
-import qualified Data.Map as M
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]
 enumerateMultilineString str
@@ -32,5 +36,18 @@ getInputFile puzzleNumber = do
 pairs :: [a] -> [(a, a)]
 pairs l = [(x, y) | (x : ys) <- tails l, y <- ys]
 
-freqs :: (Ord k, Num a) => [k] -> M.Map k a
-freqs xs = M.fromListWith (+) (map (,1) xs)
+freqs :: (Ord k, Num a) => [k] -> Map.Map k a
+freqs xs = Map.fromListWith (+) (map (,1) xs)
+
+renderVectorMap :: Map.Map (V2 Int) Char -> String
+renderVectorMap m = foo
+  where
+    keys = Map.keys m
+    xMax = maximumBy (\a b -> compare (a ^. _x) (b ^. _x)) keys ^. _x
+    xMin = minimumBy (\a b -> compare (a ^. _x) (b ^. _x)) keys ^. _x
+    yMax = maximumBy (\a b -> compare (a ^. _y) (b ^. _y)) keys ^. _y
+    yMin = minimumBy (\a b -> compare (a ^. _y) (b ^. _y)) keys ^. _y
+    xRange = (xMax - xMin) + 1
+    panelList = [Map.findWithDefault '.' (V2 x y) m | y <- [yMin .. yMax], x <- [xMin .. xMax]]
+    panelRows = chunksOf xRange panelList
+    foo = unlines (replicate xRange '=' : panelRows)

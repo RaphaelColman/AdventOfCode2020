@@ -1,4 +1,8 @@
 module Main where
 
+import AoC11.Seating as Seating
+
 main :: IO ()
-main = print "Do puzzles with stack ghci"
+main = do
+    Seating.aoc11
+    print "done"
