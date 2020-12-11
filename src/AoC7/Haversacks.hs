@@ -68,6 +68,8 @@ numberOfBagsForBag bag bagRules
         grandChildren = M.foldlWithKey (\count bag' number' -> count + number' * numberOfBagsForBag bag' bagRules) 0 childBags
 
 
+--Another solution involve recursive knot tying
+
 type Graph v e = M.Map v (M.Map v e)
 
 allDescendants :: Ord v => Graph v e -> M.Map v (S.Set v)

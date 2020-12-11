@@ -45,6 +45,10 @@ combinations xs = product $ map (length . sumToWith3s2s1s) groupsOfOneLengths
   where distribution = joltDistribution xs
         groupsOfOneLengths = map length $ filter (all (== 1)) $ group distribution
 
+
+
+--Another solution using recursively tying the knot and memoisation
+
 pathsToGoal :: IS.IntSet -> IM.IntMap Int
 pathsToGoal is = res
   where res = IM.fromSet lookupOrCalculate is
