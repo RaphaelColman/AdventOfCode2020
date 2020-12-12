@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1626319f67a2d4450b1b48fd5fb6a182f7a0c950a32fe709cecad123560d8828
+-- hash: a0c3a9a7e77009056bbaed9676e603e946fef9a9f4a7d182da4249bc6121290b
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -83,8 +83,7 @@ test-suite advent-of-code2020-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      AoC10.AdapterArraySpec
-      AoC11.SeatingSpec
+      AoC12.RainRiskSpec
       AoC4.PassportSpec
       AoC5.BoardingSpec
       AoC7.HaversacksSpec

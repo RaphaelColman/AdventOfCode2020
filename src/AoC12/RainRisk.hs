@@ -10,8 +10,7 @@ aoc12 :: IO ()
 aoc12 = do
     contents <- getInputFile 12
     let instructions = parseContents contents
-    let finished = run initShip instructions
-    print $ manhattanDistance finished
+    print $ part1 instructions
 
 type Instruction = (Char, Int)
 
@@ -21,6 +20,9 @@ data Vessel = Ship {
     location :: V2 Int,
     facing :: Direction
 } deriving (Show, Eq)
+
+part1 :: [Instruction] -> Int
+part1 = manhattanDistance . run initShip 
 
 parseContents :: String -> [Instruction]
 parseContents = map toInstruction . lines
