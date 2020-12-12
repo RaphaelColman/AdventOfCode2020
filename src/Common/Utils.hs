@@ -51,3 +51,14 @@ renderVectorMap m = foo
     panelList = [Map.findWithDefault '.' (V2 x y) m | y <- [yMin .. yMax], x <- [xMin .. xMax]]
     panelRows = chunksOf xRange panelList
     foo = unlines (replicate xRange '=' : panelRows)
+
+enumNext :: (Enum a, Eq a, Bounded a) => a -> a
+enumNext e
+      | e == maxBound  = minBound
+      | otherwise = succ e
+
+
+enumPrev :: (Enum a, Eq a, Bounded a) => a -> a
+enumPrev e
+      | e == minBound = maxBound
+      | otherwise = pred e
