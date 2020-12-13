@@ -1,13 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module AoC13.ShuttleSearch where
 
-import Common.Utils
-import Data.List
-import Data.List.Split
-import Data.Maybe
-import Prelude hiding (id)
-import Data.Sort
-import qualified GHC.Exts as Data.Ord
+import           Common.Utils
+import           Data.List
+import           Data.List.Split
+import           Data.Maybe
+import qualified GHC.Exts        as Data.Ord
+import           Prelude         hiding (id)
 
 aoc13 :: IO ()
 aoc13 = do
@@ -35,7 +34,7 @@ part1 target times = (time - target) * busId
     where (time, busId) = earliestBusTime target times
 
 part2 :: [BusInfo] -> Int
-part2 = findValidTime . sortOn Data.Ord.Down 
+part2 = findValidTime . sortOn Data.Ord.Down
 
 earliestBusTime :: (Ord b, Num b, Enum b) => b -> [b] -> (b, b)
 earliestBusTime target = minimumBy (\(earliest, _) (otherEarliest, _) -> compare earliest otherEarliest) . map mapTimes
@@ -43,16 +42,15 @@ earliestBusTime target = minimumBy (\(earliest, _) (otherEarliest, _) -> compare
                         in (earliest, x)
 
 data BusInfo = BI {
-    id :: Int,
+    id     :: Int,
     offset :: Int
 } deriving (Show, Eq, Ord)
 
 findValidTime :: [BusInfo] -> Int
 findValidTime ((BI id offset):rest) = go id 1 offset id rest
-    where go time phase offset' target [] 
-            | (time + offset') `mod` target == 0 = time
-            | otherwise = go (time+phase) phase offset' target []
-          go time phase offset' target bis'@((BI id' offset''):rest')
-            | (time + offset') `mod` target == 0 =  go time (phase*target) offset'' id' rest'
-            | otherwise = go (time+phase) phase offset' target bis'
-
+    where go time phase offset' target ls
+            | (time + offset') `mod` target == 0 = 
+                case ls of
+                [] -> time
+                ((BI id' offset''):rest') -> go time (phase*target) offset'' id' rest'
+            | otherwise = go (time+phase) phase offset' target ls
