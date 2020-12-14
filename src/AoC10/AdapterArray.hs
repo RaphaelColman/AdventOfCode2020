@@ -30,18 +30,21 @@ joltDistribution :: [Int] -> [Int]
 joltDistribution xs = (head xs : differenceDistribution xs) ++ [3]
 
 
-sumToWith3s2s1s :: Int -> [[Int]]
-sumToWith3s2s1s = go
-  where go :: Int-> [[Int]]
-        go target
-            | target < 0 = []
-            | target == 0 = [[]]
-            | otherwise = map (1 :) (go (target - 1))
-            ++ map (2 :) (go (target - 2))
-            ++ map (3 :) (go (target - 3))
+sumCount321 :: Int -> Int
+sumCount321 x = IM.findWithDefault 0 x res
+  where res = IM.fromSet mapToCount $ IS.fromList [1..x]
+        mapToCount key
+          | key < 0 = 0
+          | key == 0 = 0
+          | key == 1 = 1
+          | otherwise = let nextKeys = filter (>=0) [key - x | x <- [1, 2, 3]]
+                            lookedUp = map (\x -> IM.findWithDefault 0 x res) nextKeys
+                            zeros = length $ filter (== 0) nextKeys
+                        in sum lookedUp + zeros
+
 
 combinations :: [Int] -> Int
-combinations xs = product $ map (length . sumToWith3s2s1s) groupsOfOneLengths
+combinations xs = product $ map sumCount321 groupsOfOneLengths
   where distribution = joltDistribution xs
         groupsOfOneLengths = map length $ filter (all (== 1)) $ group distribution
 
