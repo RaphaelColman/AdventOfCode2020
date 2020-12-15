@@ -2,11 +2,12 @@ module AoC15.RambunctiousRecitation where
 
 import qualified Data.IntMap.Strict as IM
 import Data.Foldable (Foldable(foldl'))
+import Debug.Trace
 
 aoc15 :: IO ()
 aoc15 = do
   print $ recite input 2020
-  --print $ recite input 30000000
+  print $ recite input 30000000
 
 input :: [Int]
 input = [18, 8, 0, 5, 4, 1, 20]
@@ -38,6 +39,3 @@ toParams xs = PS (IM.fromList restEnumerated) lst
   where
     lst = last xs
     restEnumerated = zip (take (length xs -1) xs) [1 ..]
-
-
-test = recite [0,3,6] 3
