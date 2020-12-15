@@ -14,7 +14,7 @@ spec =
             recite2020 [3,2,1] 2020 `shouldBe` 438
             recite2020 [3,1,2] 2020 `shouldBe` 1836
 
-        it "can do part 2" $ do
+        xit "can do part 2" $ do
             recite2020 [1,3,2] 30000000 `shouldBe` 2578
             recite2020 [2,1,3] 30000000 `shouldBe` 3544142
             recite2020 [1,2,3] 30000000 `shouldBe` 261214
