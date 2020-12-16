@@ -13,12 +13,8 @@ aoc16 :: IO ()
 aoc16 = do
     contents <- getInputFile 16
     let (ticketRules, tickets, myTicket) = splitInput contents
-    print myTicket
     print $ part1 tickets ticketRules
-    let validTickets = stripInvalidTickets tickets ticketRules
-    let simplified = runSimplify $ findTicketRuleMap validTickets ticketRules
-    print simplified
-    --print $ part2 ticketRules tickets myTicket
+    print $ part2 ticketRules tickets myTicket
 
 part2 :: [TicketRule] -> [Ticket] -> Ticket -> Maybe Int
 part2 ticketRules tickets myTicket = do
@@ -82,7 +78,7 @@ rulesForInts ints rules = foldl1 S.intersection $ map (`rulesForInt` rules) ints
 type RuleMap = IM.IntMap (S.Set String)
 
 findTicketRuleMap :: [[Int]] -> [TicketRule] -> RuleMap
-findTicketRuleMap tickets ticketRules = IM.fromList $ zip [1..] asList
+findTicketRuleMap tickets ticketRules = IM.fromList $ zip [0..] asList
     where columns = transpose tickets
           asList = map (`rulesForInts` ticketRules) columns
 
@@ -92,7 +88,6 @@ simplifyPossibleTicketRules ruleMap = do
     if null singles
     then Nothing
     else Just $ foldl' (\rm str -> IM.map (deleteIfNotSingleton str) rm) ruleMap singles
-    --else Just $ IM.map (deleteIfNotSingleton (head singles)) ruleMap
 
 deleteIfNotSingleton :: (Ord a ) => a -> S.Set a -> S.Set a
 deleteIfNotSingleton elem set = if length set >= 2 then S.delete elem set else set
@@ -101,9 +96,13 @@ allSingletons :: RuleMap -> Bool
 allSingletons = null . IM.filter (\ s -> length s /= 1)
 
 runSimplify :: RuleMap -> Maybe RuleMap
-runSimplify ruleMap
-    | allSingletons ruleMap = Just ruleMap
-    | otherwise = simplifyPossibleTicketRules ruleMap >>= runSimplify
+runSimplify ruleMap = do
+    simplified <- simplifyPossibleTicketRules ruleMap
+    if allSingletons simplified
+        then Just simplified
+        else if simplified == ruleMap then Nothing
+        else runSimplify simplified
+    
 
 stripInvalidTickets :: [Ticket] -> [TicketRule] -> [Ticket]
 stripInvalidTickets tickets ticketRules = filter (\t -> not (failed t ticketRules)) tickets
