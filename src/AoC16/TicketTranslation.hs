@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module AoC16.TicketTranslation where
 
 import Common.Utils
@@ -16,15 +15,6 @@ aoc16 = do
     print $ part1 tickets ticketRules
     print $ part2 ticketRules tickets myTicket
 
-part2 :: [TicketRule] -> [Ticket] -> Ticket -> Maybe Int
-part2 ticketRules tickets myTicket = do
-       let validTickets = stripInvalidTickets tickets ticketRules
-       simplified <- runSimplify $ findTicketRuleMap validTickets ticketRules
-       let dColumns = departureColumns simplified
-       pure $ product $ map (myTicket !!) dColumns
-
-departureColumns :: RuleMap -> [Int]
-departureColumns = IM.keys . IM.filter (\s -> let name = S.findMin s in "departure" `isPrefixOf` name)
 data TicketRule = TR {
     name :: String,
     rules :: [Range]
@@ -36,6 +26,20 @@ data Range = Range {
 } deriving (Show, Eq, Ord)
 
 type Ticket = [Int]
+type RuleMap = IM.IntMap (S.Set String)
+
+part1 :: [Ticket] -> [TicketRule] -> Int
+part1 tickets rules = sum $ invalidValues tickets rules
+
+part2 :: [TicketRule] -> [Ticket] -> Ticket -> Maybe Int
+part2 ticketRules tickets myTicket = do
+       let validTickets = stripInvalidTickets tickets ticketRules
+       simplified <- runSimplify $ findTicketRuleMap validTickets ticketRules
+       let dColumns = departureColumns simplified
+       pure $ product $ map (myTicket !!) dColumns
+
+departureColumns :: RuleMap -> [Int]
+departureColumns = IM.keys . IM.filter (\s -> let name = S.findMin s in "departure" `isPrefixOf` name)
 
 parseTicketRuleLine :: String -> TicketRule
 parseTicketRuleLine str = TR name rules
@@ -51,7 +55,7 @@ splitInput str = (rules, ranges, myTicket)
     where [part1, part2, part3] = splitWhen (=="") $ lines str
           rules = map parseTicketRuleLine part1
           ranges = map parseTicket $ filter (/= "nearby tickets:") part3
-          myTicket :: [Int] = map read $ splitOn "," $ head $ filter (/="your ticket:") part2
+          myTicket  = map read $ splitOn "," $ head $ filter (/="your ticket:") part2
 
 valueInRange :: Int -> Range -> Bool
 valueInRange i (Range min max) = i >=min && i <= max
@@ -65,9 +69,6 @@ valueFailsTicketRules i = all (valueFailsTicketRule i)
 invalidValues :: [Ticket] -> [TicketRule] -> [Int]
 invalidValues tickets rules = filter (`valueFailsTicketRules` rules) $ concat tickets
 
-part1 :: [Ticket] -> [TicketRule] -> Int
-part1 tickets rules = sum $ invalidValues tickets rules
-
 rulesForInt :: Int -> [TicketRule] -> S.Set String
 rulesForInt int = S.fromList . map name . filter (satisfiesTicketRule int)
     where satisfiesTicketRule i (TR _ ranges) = any (valueInRange i) ranges
@@ -75,7 +76,6 @@ rulesForInt int = S.fromList . map name . filter (satisfiesTicketRule int)
 rulesForInts :: [Int] -> [TicketRule] -> S.Set String
 rulesForInts ints rules = foldl1 S.intersection $ map (`rulesForInt` rules) ints
 
-type RuleMap = IM.IntMap (S.Set String)
 
 findTicketRuleMap :: [[Int]] -> [TicketRule] -> RuleMap
 findTicketRuleMap tickets ticketRules = IM.fromList $ zip [0..] asList
