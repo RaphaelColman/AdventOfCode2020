@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bd3ceaf0d5cfe6eaa1a4cd64e2cbae2fa2c2e775a6d3f6d435b4c9777102a34f
+-- hash: 5fcb6ddd0ec5c58755658b44f862df5922103a691821cd847b1d371f72eb3440
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       AoC15.RambunctiousRecitation
       AoC16.TicketTranslation
       AoC17.ConwayCubes
+      AoC18.OperationOrder
       AoC2.Passwords
       AoC3.Trees
       AoC4.Passport
