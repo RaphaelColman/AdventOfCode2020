@@ -21,6 +21,9 @@ enumerateMultilineString str
     yLength = length lines'
     lengths = map length lines'
     coords = [(x, y) | y <- [0 .. yLength -1], x <- [0 .. xLength - 1]]
+  
+enumerateMultilineStringToVectorMap :: String -> Map.Map (V2 Int) Char
+enumerateMultilineStringToVectorMap = Map.fromList . map (\((x, y), c) -> (V2 x y, c)) . enumerateMultilineString
 
 readFileToString :: String -> IO String
 readFileToString filePath = do
