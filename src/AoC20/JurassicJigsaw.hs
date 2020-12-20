@@ -2,13 +2,13 @@
 module AoC20.JurassicJigsaw where
 
 import           Common.Utils
+import           Data.List
 import           Data.List.Split
 import qualified Data.Map        as M
+import           Data.Monoid     (Product (Product))
 import qualified Data.Set        as S
 import           Linear.V2
 import           Linear.Vector
-import Data.List
-import Data.Monoid (Product(Product))
 
 aoc20 :: IO ()
 aoc20 = do
@@ -49,8 +49,9 @@ findSiblingForBorder :: TileMap -> Int -> String -> M.Map Int [MatchCriteria]
 findSiblingForBorder tileMap originalTileId border = M.unionWith (++) nonFlippedMatches flippedMatches
     where tileMatches border' tile@(MkTile id' grid') isFlipped = let otherBorders = borders grid'
                                                 in map (, isFlipped) $ M.keys $ M.filter (\b -> b == if isFlipped then border' else reverse border') otherBorders
-          nonFlippedMatches = M.filter (not . null) $ M.mapWithKey (\_id tile -> tileMatches border tile False) allExceptOriginal
-          flippedMatches = M.filter (not . null) $ M.mapWithKey (\_id tile -> tileMatches border tile True) allExceptOriginal
+          findMatches isFlipped = M.filter (not . null) $ M.mapWithKey (\_id tile -> tileMatches border tile isFlipped) allExceptOriginal
+          nonFlippedMatches = findMatches False
+          flippedMatches = findMatches True
           allExceptOriginal = M.filterWithKey (\k _ -> k /= originalTileId) tileMap
 
 --This is how the border would read if you rotated it to the top of the tile
