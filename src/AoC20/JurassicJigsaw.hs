@@ -18,8 +18,8 @@ aoc20 = do
     let tileMap = parseContents contents
     let aTile = tileMap M.! 2311
     let aBorder = borders (_grid aTile) M.! North
-    let rotated = rotateTile 1 aTile
     --print $ part1 tileMap
+    print $ length $ edges $ divideTiles tileMap
     print "done"
 
 data Tile = MkTile {
@@ -51,46 +51,29 @@ part1 tileMap = M.foldMapWithKey (\k v -> Product k) only2
     where lengths = M.map (length . findSiblings tileMap) tileMap
           only2 = M.filter (==2) lengths
 
-
-data RelativeTilePlacement = RTP {
-    _relativePlacementTileId :: Int,
-    _cardinal :: Cardinal,
-    _rotation :: Int,
-    _flip :: Flip
+--Divide into Corners, Edges and Middles
+--Corners: TL, TR, BL, BR
+-- Construct BL--> BR (bottom row)
+-- Add row on top until includes TL and TR
+data DividedTileSet = DTS {
+    corners :: TileMap,
+    edges :: TileMap,
+    middles :: TileMap
 } deriving (Eq, Show, Ord)
 
-data AbsoluteTilePlacement = ATP {
-    _absolutePlacementTileId :: Int,
-    _location :: V2 Int,
-    _absoluteRotation :: Int,
-    _absoluteFlip :: Flip
-} deriving (Eq, Show, Ord)
 
-convertToAbsolute :: AbsoluteTilePlacement -> RelativeTilePlacement -> AbsoluteTilePlacement
-convertToAbsolute (ATP _ location rotation flip) newPlacement = undefined
-    where newCardinal oldCardinal = let notFlippedYet = stepEnum oldCardinal rotation
-                                    in case flip of
-                                            Horizontal -> case notFlippedYet of
-                                                                West -> East
-                                                                East -> West
-                                                                other -> other
-                                            Vertical -> case notFlippedYet of
-                                                                North -> South
-                                                                South -> North
-                                                                other -> other
-                                            None -> notFlippedYet
-          newRotation oldRotation = oldRotation + rotation
+buildBottomRow :: DividedTileSet -> TileMap
+buildBottomRow (DTS corners edges middles) = undefined
+    where anEdge = M.findMin corners
+          rowLength = round $ sqrt $ fromIntegral $ length edges + 1
 
---List of tileplacements relative to a source tile presuming the source tile has not been flipped or rotated.
-findRelativeTilePlacement :: DeterministicTileMap -> Tile -> [RelativeTilePlacement]
-findRelativeTilePlacement dtm (MkTile id _) = mapMaybe forCardinal [North, East, South, West]
-    where forCardinal cardinal = do
-             (TM id matchingSide flipped) <- M.lookup id dtm >>= M.lookup cardinal
-             rotation <- (+ fromEnum cardinal) <$> elemIndex matchingSide [South, East, North, West]
-             let flip = if flipped
-                        then if matchingSide `elem` [North, South] then Horizontal else Vertical
-                        else None
-             pure $ RTP id cardinal rotation flip
+divideTiles :: TileMap -> DividedTileSet
+divideTiles tm = DTS (createTileMap corners) (createTileMap edges) (createTileMap middles)
+    where simplified = attemptSimplify tm
+          corners = M.keys $ M.filter (\m -> length m == 2) simplified
+          edges = M.keys $ M.filter (\m -> length m == 3) simplified
+          middles = M.keys $ M.filter (\m -> length m == 4) simplified
+          createTileMap = M.fromList . map (\i -> (i, tm M.! i))
 
 
 findSiblings :: TileMap -> Tile -> SiblingMap
@@ -172,3 +155,46 @@ rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
 
 printTile :: Tile -> IO ()
 printTile (MkTile _ grid) = putStr $ renderVectorMap grid
+
+
+--These won't really work because you can't easily keep track of tile flips
+convertToAbsolute :: AbsoluteTilePlacement -> RelativeTilePlacement -> AbsoluteTilePlacement
+convertToAbsolute (ATP _ location rotation flip) newPlacement = undefined
+    where newCardinal oldCardinal = let notFlippedYet = stepEnum oldCardinal rotation
+                                    in case flip of
+                                            Horizontal -> case notFlippedYet of
+                                                                West -> East
+                                                                East -> West
+                                                                other -> other
+                                            Vertical -> case notFlippedYet of
+                                                                North -> South
+                                                                South -> North
+                                                                other -> other
+                                            None -> notFlippedYet
+          newRotation oldRotation = oldRotation + rotation
+
+--List of tileplacements relative to a source tile presuming the source tile has not been flipped or rotated.
+findRelativeTilePlacement :: DeterministicTileMap -> Tile -> [RelativeTilePlacement]
+findRelativeTilePlacement dtm (MkTile id _) = mapMaybe forCardinal [North, East, South, West]
+    where forCardinal cardinal = do
+             (TM id matchingSide flipped) <- M.lookup id dtm >>= M.lookup cardinal
+             rotation <- (+ fromEnum cardinal) <$> elemIndex matchingSide [South, East, North, West]
+             let flip = if flipped
+                        then if matchingSide `elem` [North, South] then Horizontal else Vertical
+                        else None
+             pure $ RTP id cardinal rotation flip
+
+
+data RelativeTilePlacement = RTP {
+    _relativePlacementTileId :: Int,
+    _cardinal :: Cardinal,
+    _rotation :: Int,
+    _flip :: Flip
+} deriving (Eq, Show, Ord)
+
+data AbsoluteTilePlacement = ATP {
+    _absolutePlacementTileId :: Int,
+    _location :: V2 Int,
+    _absoluteRotation :: Int,
+    _absoluteFlip :: Flip
+} deriving (Eq, Show, Ord)
