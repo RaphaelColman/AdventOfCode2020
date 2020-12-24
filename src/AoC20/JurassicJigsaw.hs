@@ -19,7 +19,6 @@ aoc20 = do
     let aTile = tileMap M.! 2311
     let aBorder = borders (_grid aTile) M.! North
     --print $ part1 tileMap
-    print $ length $ edges $ divideTiles tileMap
     print "done"
 
 data Tile = MkTile {
@@ -35,7 +34,6 @@ type Grid = M.Map (V2 Int) Char
 type Borders = M.Map Cardinal String
 type SiblingMap = M.Map Cardinal (M.Map Int [MatchCriteria])
 type MatchCriteria = (Cardinal, Bool) --The cardinal on the target and whether you have flipped it
-type DeterministicTileMap = M.Map Int (M.Map Cardinal TileMatch)
 
 data TileMatch = TM {
     _tileId       :: Int,
@@ -51,30 +49,31 @@ part1 tileMap = M.foldMapWithKey (\k v -> Product k) only2
     where lengths = M.map (length . findSiblings tileMap) tileMap
           only2 = M.filter (==2) lengths
 
---Divide into Corners, Edges and Middles
---Corners: TL, TR, BL, BR
--- Construct BL--> BR (bottom row)
--- Add row on top until includes TL and TR
-data DividedTileSet = DTS {
-    corners :: TileMap,
-    edges :: TileMap,
-    middles :: TileMap
+data PlacementParams = PP {
+    placedTileMap :: PlacedTileMap,
+    queue :: [Tile]
 } deriving (Eq, Show, Ord)
 
+type PlacedTileMap = M.Map (V2 Int) Tile
 
-buildBottomRow :: DividedTileSet -> TileMap
-buildBottomRow (DTS corners edges middles) = undefined
-    where anEdge = M.findMin corners
-          rowLength = round $ sqrt $ fromIntegral $ length edges + 1
 
-divideTiles :: TileMap -> DividedTileSet
-divideTiles tm = DTS (createTileMap corners) (createTileMap edges) (createTileMap middles)
-    where simplified = attemptSimplify tm
-          corners = M.keys $ M.filter (\m -> length m == 2) simplified
-          edges = M.keys $ M.filter (\m -> length m == 3) simplified
-          middles = M.keys $ M.filter (\m -> length m == 4) simplified
-          createTileMap = M.fromList . map (\i -> (i, tm M.! i))
+--Border as a string to tuple of the tile's cardinal and it's location
+getFreeBorders :: PlacedTileMap -> M.Map String (Cardinal, V2 Int)
+getFreeBorders placedTileMap = borderMap
+    where freeNeighbours = M.filter (not . (`M.member` placedTileMap)) . orthogonalNeighbours
+          tilesToFreeNeighbours = M.filter (not . null) $ M.mapWithKey (\k v -> freeNeighbours k) placedTileMap
+          borderMap = M.foldlWithKey lookUpTileAndGetBorders M.empty tilesToFreeNeighbours
+          lookUpTileAndGetBorders mp coord cardinalMap = let tile = placedTileMap M.! coord
+                                                             borders = M.fromList $ map (\c -> (borderForCardinal tile c, (c, coord))) $ M.keys cardinalMap
+                                                             in M.union mp borders
 
+
+orthogonalNeighbours :: V2 Int -> M.Map Cardinal (V2 Int)
+orthogonalNeighbours coord = M.fromList [(North, north), (East, east), (South, south), (West, west)]
+    where north = coord + V2 0 (-1)
+          east = coord + V2 1 0
+          south = coord + V2 0 1
+          west = coord + V2 (-1) 0
 
 findSiblings :: TileMap -> Tile -> SiblingMap
 findSiblings tileMap tile@(MkTile _id _grid) = M.filter (not . null) siblingMap
@@ -100,6 +99,8 @@ borders grid = M.fromList [(North, north), (East, east), (South, reverse south),
           west = foldUp $ M.filterWithKey (\(V2 x y) _ -> x==0) grid
           foldUp = M.foldMapWithKey (\k v -> [v])
 
+borderForCardinal :: Tile -> Cardinal -> String
+borderForCardinal (MkTile _ grid) cardinal = borders grid M.! cardinal
 
 parseContents :: String -> TileMap
 parseContents str = M.fromList tileList
@@ -113,21 +114,6 @@ parseTileStr str = MkTile (read id) grid
           grid = enumerateMultilineStringToVectorMap $ intercalate "\n" gridStr
           id = filter (/= ':') $ words idStr !! 1
 
-
-attemptSimplify :: TileMap -> DeterministicTileMap
-attemptSimplify tileMap = simplified
-    where allMatches = M.map (findSiblings tileMap) tileMap
-          simplified = M.map simplify allMatches
-
-simplify :: SiblingMap -> M.Map Cardinal TileMatch
-simplify = M.map simplifyMap
-    where simplifyMap :: M.Map Int [MatchCriteria] -> TileMatch
-          simplifyMap mp
-            | length mp == 1 = let [(onlyId, criteria)] = M.toList mp
-                                in if length criteria /= 1
-                                    then error "Multiple criteria for match"
-                                    else let (onlyCardinal, onlyBool) = head criteria in TM onlyId onlyCardinal onlyBool
-            | otherwise = error "Multiple matches for cardinal"
 
 flipTile :: Flip -> Tile -> Tile
 flipTile flip (MkTile id grid) = MkTile id (flipGrid flip grid)
@@ -156,45 +142,18 @@ rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
 printTile :: Tile -> IO ()
 printTile (MkTile _ grid) = putStr $ renderVectorMap grid
 
+type DeterministicTileMap = M.Map Int (M.Map Cardinal TileMatch)
+attemptSimplify :: TileMap -> DeterministicTileMap
+attemptSimplify tileMap = simplified
+    where allMatches = M.map (findSiblings tileMap) tileMap
+          simplified = M.map simplify allMatches
 
---These won't really work because you can't easily keep track of tile flips
-convertToAbsolute :: AbsoluteTilePlacement -> RelativeTilePlacement -> AbsoluteTilePlacement
-convertToAbsolute (ATP _ location rotation flip) newPlacement = undefined
-    where newCardinal oldCardinal = let notFlippedYet = stepEnum oldCardinal rotation
-                                    in case flip of
-                                            Horizontal -> case notFlippedYet of
-                                                                West -> East
-                                                                East -> West
-                                                                other -> other
-                                            Vertical -> case notFlippedYet of
-                                                                North -> South
-                                                                South -> North
-                                                                other -> other
-                                            None -> notFlippedYet
-          newRotation oldRotation = oldRotation + rotation
-
---List of tileplacements relative to a source tile presuming the source tile has not been flipped or rotated.
-findRelativeTilePlacement :: DeterministicTileMap -> Tile -> [RelativeTilePlacement]
-findRelativeTilePlacement dtm (MkTile id _) = mapMaybe forCardinal [North, East, South, West]
-    where forCardinal cardinal = do
-             (TM id matchingSide flipped) <- M.lookup id dtm >>= M.lookup cardinal
-             rotation <- (+ fromEnum cardinal) <$> elemIndex matchingSide [South, East, North, West]
-             let flip = if flipped
-                        then if matchingSide `elem` [North, South] then Horizontal else Vertical
-                        else None
-             pure $ RTP id cardinal rotation flip
-
-
-data RelativeTilePlacement = RTP {
-    _relativePlacementTileId :: Int,
-    _cardinal :: Cardinal,
-    _rotation :: Int,
-    _flip :: Flip
-} deriving (Eq, Show, Ord)
-
-data AbsoluteTilePlacement = ATP {
-    _absolutePlacementTileId :: Int,
-    _location :: V2 Int,
-    _absoluteRotation :: Int,
-    _absoluteFlip :: Flip
-} deriving (Eq, Show, Ord)
+simplify :: SiblingMap -> M.Map Cardinal TileMatch
+simplify = M.map simplifyMap
+    where simplifyMap :: M.Map Int [MatchCriteria] -> TileMatch
+          simplifyMap mp
+            | length mp == 1 = let [(onlyId, criteria)] = M.toList mp
+                                in if length criteria /= 1
+                                    then error "Multiple criteria for match"
+                                    else let (onlyCardinal, onlyBool) = head criteria in TM onlyId onlyCardinal onlyBool
+            | otherwise = error "Multiple matches for cardinal"
