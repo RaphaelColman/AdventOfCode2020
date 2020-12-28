@@ -12,17 +12,22 @@ import Data.Monoid (Product (Product))
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.Tuple
+import Debug.Trace
 import Linear.V2
 import Linear.Vector
-import Debug.Trace
+import System.Directory
+import System.IO
+import Text.Format
+import Control.Lens
 
 aoc20 :: IO ()
 aoc20 = do
   contents <- getInputFile 20
   let tileMap = parseContents contents
-  let initial = initPlacementParams tileMap
-  let result = run initial
-  printPlacedTileMap $ fromJust result
+  --putStr $ fromJust $ part2 tileMap
+  monster <- readMonster
+  let chart = fromJust $ tester tileMap monster
+  putStr $ renderVectorMap chart
   print "done"
 
 data Tile = MkTile
@@ -64,8 +69,85 @@ data PlacementParams = PP
 
 type PlacedTileMap = M.Map (V2 Int) Tile
 
+type Chart = M.Map (V2 Int) Char
+
+part2 :: TileMap -> Maybe String
+part2 tileMap = do
+  (PP result queue) <- run $ initPlacementParams tileMap
+  let withoutBorders = M.map stripBorder result
+  pure $ printPlacedTileMap withoutBorders
+
+
+tester :: TileMap -> Chart -> Maybe Chart
+tester tileMap monster = do
+  (PP result queue) <- run $ initPlacementParams tileMap
+  let withoutBorders = translateToOrigin $ M.map stripBorder result
+  let chart = translateToOrigin $ foldTileMap withoutBorders
+  rotateFlipAndScan monster chart
+
+
+rotateFlipAndScan :: Chart -> Chart -> Maybe Chart
+rotateFlipAndScan monster chart = do
+  let unflippedCombos = map (`rotateChart` chart) [0..3]
+  --let flippedCombos = map (`rotateChart` chart) [0..3]
+  let scans = filter containsSeaMonster $ map (scanForSeaMonsters monster) unflippedCombos
+  if null scans then Nothing else Just $ head scans
+
+containsSeaMonster :: Chart -> Bool
+containsSeaMonster chart = '0' `elem` M.elems chart
+
+scanForSeaMonsters :: Chart -> Chart -> Chart
+scanForSeaMonsters monster chart = folded
+    where folded = M.foldlWithKey scanRegion M.empty chart
+          scanRegion :: Chart -> V2 Int -> Char -> Chart
+          scanRegion aggregator coord value = let region = regionForCoord chart coord
+                                   in if isSeaMonster monster region
+                                      then let revealed = revealSeaMonster monster region in M.union revealed aggregator
+                                      else M.union aggregator region
+
+regionForCoord :: Chart -> V2 Int -> Chart
+regionForCoord chart (V2 x y) = M.filterWithKey (\(V2 thisX thisY) _ -> 
+                                                    thisX >= xMin
+                                                    && thisX < xMax
+                                                    && thisY >= yMin
+                                                    && thisY < yMax
+                                                    ) chart
+  where xMin = x
+        xMax = 20+x
+        yMin = y
+        yMax = 3+y
+
+isSeaMonster :: Chart -> Chart -> Bool
+isSeaMonster monster region = M.intersection justHashes monster == monster
+  where
+    movedToOrigin = translateToOrigin region
+    justHashes = M.filter (== '#') movedToOrigin
+
+revealSeaMonster :: Chart -> Chart -> Chart
+revealSeaMonster monster region = M.unionWith (\_ _ -> '0') translatedMonster region
+  where keys = M.keysSet region
+        xs = S.map (^. _x) keys
+        ys = S.map (^. _y) keys
+        xmin = minimum xs
+        ymin = minimum ys
+        translatedMonster = M.mapKeys (\v -> v + V2 xmin ymin) monster
+
 initPlacementParams :: TileMap -> PlacementParams
 initPlacementParams tm = PP M.empty (M.elems tm)
+
+translateToOrigin :: M.Map (V2 Int) a -> M.Map (V2 Int) a
+translateToOrigin placedTileMap = M.mapKeys (+ movementVector) placedTileMap
+  where
+    keys = M.keysSet placedTileMap
+    (V2 minx _) = minimumBy (\(V2 x1 y1) (V2 x2 y2) -> compare x1 x2) keys
+    (V2 _ miny) = minimumBy (\(V2 x1 y1) (V2 x2 y2) -> compare y1 y2) keys
+    movementVector = V2 (- minx) (- miny)
+
+stripBorder :: Tile -> Tile
+stripBorder (MkTile id grid) = MkTile id translated
+  where
+    strippedGrid = M.filterWithKey (\(V2 x y) t -> not (x `elem` [0, 9] || y `elem` [0, 9])) grid
+    translated = M.mapKeys (\v -> v + V2 (-1) (-1)) strippedGrid
 
 --Border as a string to tuple of the tile's cardinal and it's location
 getFreeBorders :: PlacedTileMap -> M.Map String (Cardinal, V2 Int)
@@ -83,7 +165,6 @@ run :: PlacementParams -> Maybe PlacementParams
 run pp@(PP placedTileMap queue)
   | null queue = Just pp
   | otherwise = step pp >>= run
-
 
 step :: PlacementParams -> Maybe PlacementParams
 step pp@(PP placedTileMap queue)
@@ -132,7 +213,7 @@ findFirstMatch freeBorders tileBorders = do
 
 placeAnywhere :: PlacementParams -> PlacementParams
 placeAnywhere (PP placedTileMap (firstTile : rest)) =
-  let newMap = M.insert (V2 0 0) firstTile placedTileMap --force flipping the first tile so I can check flipping works
+  let newMap = M.insert (V2 0 0) firstTile placedTileMap
    in PP newMap rest
 
 values :: (Ord a) => M.Map k a -> S.Set a
@@ -191,6 +272,14 @@ flipGrid flip grid = M.mapWithKey flipper grid
   where
     flipper coord _ = grid M.! flipCoord flip coord
 
+maxXAndY :: Chart -> V2 Int
+maxXAndY chart = V2 xmax ymax
+  where keys = M.keysSet chart
+        xs = S.map (^. _x) keys
+        ys = S.map (^. _y) keys
+        xmax = maximum xs
+        ymax = maximum ys
+
 flipCoord :: Flip -> V2 Int -> V2 Int
 flipCoord flip (V2 x y) =
   let flipNum num = fromJust $ Seq.fromList [9, 8 .. 0] Seq.!? num
@@ -203,6 +292,9 @@ rotateTile amount (MkTile id grid) = MkTile id rotatedGrid
   where
     rotatedGrid = M.mapKeys (rotateCoord amount) grid
 
+rotateChart :: Int -> M.Map (V2 Int) a -> M.Map (V2 Int) a
+rotateChart amount = translateToOrigin . M.mapKeys (rotateCoord amount)
+
 --0 is no rotation, 1 is 90 degrees clockwise etc
 rotateCoord :: Int -> V2 Int -> V2 Int
 rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
@@ -212,22 +304,33 @@ rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
 printTile :: Tile -> IO ()
 printTile (MkTile _ grid) = putStr $ renderVectorMap grid
 
-printPlacedTileMap :: PlacementParams -> IO ()
-printPlacedTileMap (PP placedTileMap queue) = do
-    print $ M.map _id placedTileMap
-    let folded = if null placedTileMap then M.empty else M.foldMapWithKey foldTile placedTileMap
-    putStr $ renderVectorMap folded
+printPlacedTileMap :: PlacedTileMap -> String
+printPlacedTileMap placedTileMap = renderVectorMap $ foldTileMap placedTileMap
+
+foldTileMap :: PlacedTileMap -> M.Map (V2 Int) Char
+foldTileMap placedTileMap = if null placedTileMap then M.empty else M.foldMapWithKey foldTile placedTileMap
 
 foldTile :: V2 Int -> Tile -> M.Map (V2 Int) Char
 foldTile macroCoord (MkTile _ grid) = M.foldMapWithKey (foldGrid macroCoord) grid
-  where foldGrid :: V2 Int -> V2 Int -> Char -> M.Map (V2 Int) Char
-        foldGrid (V2 macroX macroY) (V2 x y) ch = let newX = (10*macroX+x)
-                                                      newY = (10*macroY+y)
-                                                  in M.singleton (V2 newX newY) ch
+  where
+    foldGrid (V2 macroX macroY) (V2 x y) ch =
+      let newX = (gridSize * macroX + x)
+          newY = (gridSize * macroY + y)
+       in M.singleton (V2 newX newY) ch
+    gridSize = (+) 1 $ maximum $ map (\(V2 x y) -> x) $ M.keys grid
 
 runInteractive :: PlacementParams -> IO ()
-runInteractive pp@(PP placeddTileMap queue) = do
-    printPlacedTileMap pp
-    _ <- getLine 
-    let new = fromJust $ step pp
-    runInteractive new
+runInteractive pp@(PP placedTileMap queue) = do
+  putStr $ printPlacedTileMap placedTileMap
+  _ <- getLine
+  let stepped = step pp
+  runInteractive (fromJust stepped)
+  print "done"
+
+readMonster :: IO Chart
+readMonster = do
+  workingDirectory <- getCurrentDirectory
+  let path = format "{0}/res/AoC20/monster.txt" [workingDirectory]
+  contents <- readFileToString path
+  let monster = M.filter (=='#') $ enumerateMultilineStringToVectorMap contents
+  return monster
