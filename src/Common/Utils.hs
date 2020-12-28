@@ -10,6 +10,7 @@ import Linear.V2
 import System.Directory
 import System.IO
 import Text.Format
+import Debug.Trace
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]
 enumerateMultilineString str
@@ -43,7 +44,7 @@ freqs :: (Ord k, Num a) => [k] -> Map.Map k a
 freqs xs = Map.fromListWith (+) (map (,1) xs)
 
 renderVectorMap :: Map.Map (V2 Int) Char -> String
-renderVectorMap m = foo
+renderVectorMap m = if null m then "" else foo
   where
     keys = Map.keys m
     xMax = maximumBy (\a b -> compare (a ^. _x) (b ^. _x)) keys ^. _x

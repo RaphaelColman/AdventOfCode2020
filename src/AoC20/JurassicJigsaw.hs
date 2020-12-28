@@ -14,14 +14,15 @@ import qualified Data.Set as S
 import Data.Tuple
 import Linear.V2
 import Linear.Vector
+import Debug.Trace
 
 aoc20 :: IO ()
 aoc20 = do
   contents <- getInputFile 20
   let tileMap = parseContents contents
-  let aTile = tileMap M.! 2311
-  let aBorder = borders (_grid aTile) M.! North
-  --print $ part1 tileMap
+  let initial = initPlacementParams tileMap
+  let result = run initial
+  printPlacedTileMap $ fromJust result
   print "done"
 
 data Tile = MkTile
@@ -31,8 +32,6 @@ data Tile = MkTile
   deriving (Eq, Show, Ord) -- Use ID for ord?
 
 data Cardinal = North | East | South | West deriving (Eq, Show, Enum, Ord, Bounded)
-
-type TileSet = S.Set Tile
 
 type TileMap = M.Map Int Tile
 
@@ -65,6 +64,9 @@ data PlacementParams = PP
 
 type PlacedTileMap = M.Map (V2 Int) Tile
 
+initPlacementParams :: TileMap -> PlacementParams
+initPlacementParams tm = PP M.empty (M.elems tm)
+
 --Border as a string to tuple of the tile's cardinal and it's location
 getFreeBorders :: PlacedTileMap -> M.Map String (Cardinal, V2 Int)
 getFreeBorders placedTileMap = borderMap
@@ -77,11 +79,23 @@ getFreeBorders placedTileMap = borderMap
           borders = M.fromList $ map (\c -> (borderForCardinal tile c, (c, coord))) $ M.keys cardinalMap
        in M.union mp borders
 
+run :: PlacementParams -> Maybe PlacementParams
+run pp@(PP placedTileMap queue)
+  | null queue = Just pp
+  | otherwise = step pp >>= run
+
+
 step :: PlacementParams -> Maybe PlacementParams
 step pp@(PP placedTileMap queue)
   | null placedTileMap = Just $ placeAnywhere pp
   | null queue = Just pp
-  | otherwise = placeFromQueue pp
+  | otherwise =
+    let placed = placeFromQueue pp
+     in if isNothing placed
+          then Just $ PP placedTileMap (bumpQueue queue)
+          else placed
+  where
+    bumpQueue (first : rest) = rest ++ [first]
 
 placeFromQueue :: PlacementParams -> Maybe PlacementParams
 placeFromQueue pp@(PP placedTileMap (firstTile : rest)) = do
@@ -89,24 +103,36 @@ placeFromQueue pp@(PP placedTileMap (firstTile : rest)) = do
   let tileBorders = borders (_grid firstTile)
   (MC sourceCardinal destinationCardinal destinationCoord flipped) <- findFirstMatch freeBorders tileBorders
   let placementCoord = orthogonalNeighbours destinationCoord M.! destinationCardinal
-  --TODO work out rotation, perform rotation, put in map
-  Nothing
+  let rotation = matchCardinalRotation sourceCardinal destinationCardinal
+  let newTileNotFlipped = rotateTile rotation firstTile
+  let newTile =
+        if flipped --Don't bother flipping for now to check i can do rotation properly
+          then flipForDestinationCardinal destinationCardinal newTileNotFlipped
+          else newTileNotFlipped
+  pure $ PP (M.insert placementCoord newTile placedTileMap) rest
+
+--Clockwise rotation you will need to match destination cardinal to source cardinal
+matchCardinalRotation :: Cardinal -> Cardinal -> Int
+matchCardinalRotation source destination = reverseCardinalList !! lookupIndex
+  where
+    reverseCardinalList = map fromEnum [South, East, North, West]
+    lookupIndex = (fromEnum source - fromEnum destination) `mod` 4
 
 findFirstMatch :: M.Map String (Cardinal, V2 Int) -> Borders -> Maybe MatchCriteria
 findFirstMatch freeBorders tileBorders = do
   let tileBorderValues = values tileBorders
-  let firstNonFlippedMatch = S.lookupMin $ S.intersection (M.keysSet freeBorders) tileBorderValues
-  let firstFlippedMatch = S.lookupMin $ S.intersection (M.keysSet freeBorders) (S.map reverse tileBorderValues)
-  let nonFlipped = (,) <$> firstNonFlippedMatch <*> Just True
-  let flipped = (,) <$> firstFlippedMatch <*> Just False
+  let firstFlippedMatch = S.lookupMin $ S.intersection (M.keysSet freeBorders) tileBorderValues
+  let firstNonFlippedMatch = S.lookupMin $ S.intersection (M.keysSet freeBorders) (S.map reverse tileBorderValues)
+  let nonFlipped = (,) <$> firstNonFlippedMatch <*> Just False
+  let flipped = (,) <$> firstFlippedMatch <*> Just True
   (match, flipped) <- nonFlipped <|> flipped
   let (destinationCardinal, destinationCoord) = freeBorders M.! match
-  sourceCardinal <- getCardinal tileBorders match
+  sourceCardinal <- getCardinal tileBorders (if flipped then match else reverse match)
   pure $ MC sourceCardinal destinationCardinal destinationCoord flipped
 
 placeAnywhere :: PlacementParams -> PlacementParams
 placeAnywhere (PP placedTileMap (firstTile : rest)) =
-  let newMap = M.insert (V2 0 0) firstTile placedTileMap
+  let newMap = M.insert (V2 0 0) firstTile placedTileMap --force flipping the first tile so I can check flipping works
    in PP newMap rest
 
 values :: (Ord a) => M.Map k a -> S.Set a
@@ -155,6 +181,11 @@ parseTileStr str = MkTile (read id) grid
 flipTile :: Flip -> Tile -> Tile
 flipTile flip (MkTile id grid) = MkTile id (flipGrid flip grid)
 
+flipForDestinationCardinal :: Cardinal -> Tile -> Tile
+flipForDestinationCardinal cardinal tile
+  | cardinal `elem` [North, South] = flipTile Horizontal tile
+  | cardinal `elem` [West, East] = flipTile Vertical tile
+
 flipGrid :: Flip -> Grid -> Grid
 flipGrid flip grid = M.mapWithKey flipper grid
   where
@@ -180,3 +211,23 @@ rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
 
 printTile :: Tile -> IO ()
 printTile (MkTile _ grid) = putStr $ renderVectorMap grid
+
+printPlacedTileMap :: PlacementParams -> IO ()
+printPlacedTileMap (PP placedTileMap queue) = do
+    print $ M.map _id placedTileMap
+    let folded = if null placedTileMap then M.empty else M.foldMapWithKey foldTile placedTileMap
+    putStr $ renderVectorMap folded
+
+foldTile :: V2 Int -> Tile -> M.Map (V2 Int) Char
+foldTile macroCoord (MkTile _ grid) = M.foldMapWithKey (foldGrid macroCoord) grid
+  where foldGrid :: V2 Int -> V2 Int -> Char -> M.Map (V2 Int) Char
+        foldGrid (V2 macroX macroY) (V2 x y) ch = let newX = (10*macroX+x)
+                                                      newY = (10*macroY+y)
+                                                  in M.singleton (V2 newX newY) ch
+
+runInteractive :: PlacementParams -> IO ()
+runInteractive pp@(PP placeddTileMap queue) = do
+    printPlacedTileMap pp
+    _ <- getLine 
+    let new = fromJust $ step pp
+    runInteractive new
