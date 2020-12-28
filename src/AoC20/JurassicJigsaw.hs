@@ -25,10 +25,15 @@ aoc20 = do
   contents <- getInputFile 20
   let tileMap = parseContents contents
   --putStr $ fromJust $ part2 tileMap
-  monster <- readMonster
-  let chart = fromJust $ tester tileMap monster
-  putStr $ renderVectorMap chart
+  --monster <- readMonster
+  --let chart = fromJust $ tester tileMap monster
+  --putStr $ renderVectorMap chart
+  mm <- readMonsterMap
+  putStr $ renderVectorMap mm
+  print $ length $ M.filter (=='#') mm
   print "done"
+
+--Looks like 1629
 
 data Tile = MkTile
   { _id :: Int,
@@ -83,7 +88,7 @@ tester tileMap monster = do
   (PP result queue) <- run $ initPlacementParams tileMap
   let withoutBorders = translateToOrigin $ M.map stripBorder result
   let chart = translateToOrigin $ foldTileMap withoutBorders
-  rotateFlipAndScan monster chart
+  rotateFlipAndScan monster (flipChart Horizontal chart)
 
 
 rotateFlipAndScan :: Chart -> Chart -> Maybe Chart
@@ -97,13 +102,11 @@ containsSeaMonster :: Chart -> Bool
 containsSeaMonster chart = '0' `elem` M.elems chart
 
 scanForSeaMonsters :: Chart -> Chart -> Chart
-scanForSeaMonsters monster chart = folded
-    where folded = M.foldlWithKey scanRegion M.empty chart
-          scanRegion :: Chart -> V2 Int -> Char -> Chart
-          scanRegion aggregator coord value = let region = regionForCoord chart coord
-                                   in if isSeaMonster monster region
-                                      then let revealed = revealSeaMonster monster region in M.union revealed aggregator
-                                      else M.union aggregator region
+scanForSeaMonsters monster chart = foldr (flip (revealSeaMonster monster)) chart coords
+    where coords = M.foldMapWithKey scanRegion chart
+          scanRegion :: V2 Int -> Char -> [V2 Int]
+          scanRegion coord value = let region = regionForCoord chart coord
+                                   in [coord | isSeaMonster monster region]
 
 regionForCoord :: Chart -> V2 Int -> Chart
 regionForCoord chart (V2 x y) = M.filterWithKey (\(V2 thisX thisY) _ -> 
@@ -123,14 +126,9 @@ isSeaMonster monster region = M.intersection justHashes monster == monster
     movedToOrigin = translateToOrigin region
     justHashes = M.filter (== '#') movedToOrigin
 
-revealSeaMonster :: Chart -> Chart -> Chart
-revealSeaMonster monster region = M.unionWith (\_ _ -> '0') translatedMonster region
-  where keys = M.keysSet region
-        xs = S.map (^. _x) keys
-        ys = S.map (^. _y) keys
-        xmin = minimum xs
-        ymin = minimum ys
-        translatedMonster = M.mapKeys (\v -> v + V2 xmin ymin) monster
+revealSeaMonster :: Chart -> Chart -> V2 Int -> Chart
+revealSeaMonster monster chart coord = M.unionWith (\_ _ -> '0') translatedMonster chart
+  where translatedMonster = M.mapKeys (+ coord) monster
 
 initPlacementParams :: TileMap -> PlacementParams
 initPlacementParams tm = PP M.empty (M.elems tm)
@@ -267,6 +265,19 @@ flipForDestinationCardinal cardinal tile
   | cardinal `elem` [North, South] = flipTile Horizontal tile
   | cardinal `elem` [West, East] = flipTile Vertical tile
 
+flipChart :: Flip -> Chart -> Chart
+flipChart flip chart = M.mapWithKey flipper chart 
+  where flipper coord _ = chart M.! flipCoordForChart flip coord max
+        max = maxXAndY chart
+
+flipCoordForChart :: Flip -> V2 Int -> V2 Int -> V2 Int
+flipCoordForChart flip (V2 x y) (V2 maxX maxY) = 
+  let flipNumX num = fromJust $ Seq.fromList [95, 94 .. 0] Seq.!? num --Change this to use maxX and y etc
+      flipNumY num = fromJust $ Seq.fromList [95, 94 .. 0] Seq.!? num
+   in case flip of
+        Horizontal -> V2 (flipNumX x) y
+        Vertical -> V2 x (flipNumY y)
+
 flipGrid :: Flip -> Grid -> Grid
 flipGrid flip grid = M.mapWithKey flipper grid
   where
@@ -334,3 +345,10 @@ readMonster = do
   contents <- readFileToString path
   let monster = M.filter (=='#') $ enumerateMultilineStringToVectorMap contents
   return monster
+
+readMonsterMap :: IO Chart
+readMonsterMap = do
+  workingDirectory <- getCurrentDirectory
+  let path = format "{0}/res/AoC20/monstermap.txt" [workingDirectory]
+  contents <- readFileToString path
+  return $ enumerateMultilineStringToVectorMap contents
