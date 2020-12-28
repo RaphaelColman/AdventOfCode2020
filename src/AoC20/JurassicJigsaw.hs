@@ -24,13 +24,8 @@ aoc20 :: IO ()
 aoc20 = do
   contents <- getInputFile 20
   let tileMap = parseContents contents
-  --putStr $ fromJust $ part2 tileMap
-  --monster <- readMonster
-  --let chart = fromJust $ tester tileMap monster
-  --putStr $ renderVectorMap chart
-  mm <- readMonsterMap
-  putStr $ renderVectorMap mm
-  print $ length $ M.filter (=='#') mm
+  monster <- readMonster
+  print $ part2 tileMap monster
   print "done"
 
 --Looks like 1629
@@ -76,26 +71,20 @@ type PlacedTileMap = M.Map (V2 Int) Tile
 
 type Chart = M.Map (V2 Int) Char
 
-part2 :: TileMap -> Maybe String
-part2 tileMap = do
-  (PP result queue) <- run $ initPlacementParams tileMap
-  let withoutBorders = M.map stripBorder result
-  pure $ printPlacedTileMap withoutBorders
-
-
-tester :: TileMap -> Chart -> Maybe Chart
-tester tileMap monster = do
+part2 :: TileMap -> Chart -> Maybe Int
+part2 tileMap monster = do
   (PP result queue) <- run $ initPlacementParams tileMap
   let withoutBorders = translateToOrigin $ M.map stripBorder result
   let chart = translateToOrigin $ foldTileMap withoutBorders
-  rotateFlipAndScan monster (flipChart Horizontal chart)
-
+  scan <- rotateFlipAndScan monster chart
+  pure $ length $ M.filter (=='#') scan
 
 rotateFlipAndScan :: Chart -> Chart -> Maybe Chart
 rotateFlipAndScan monster chart = do
   let unflippedCombos = map (`rotateChart` chart) [0..3]
-  --let flippedCombos = map (`rotateChart` chart) [0..3]
-  let scans = filter containsSeaMonster $ map (scanForSeaMonsters monster) unflippedCombos
+  let flippedCombos = map (`rotateChart` flipChart Horizontal chart) [0..3]
+  let allCombos = unflippedCombos ++ flippedCombos
+  let scans = filter containsSeaMonster $ map (scanForSeaMonsters monster) allCombos
   if null scans then Nothing else Just $ head scans
 
 containsSeaMonster :: Chart -> Bool
@@ -272,8 +261,8 @@ flipChart flip chart = M.mapWithKey flipper chart
 
 flipCoordForChart :: Flip -> V2 Int -> V2 Int -> V2 Int
 flipCoordForChart flip (V2 x y) (V2 maxX maxY) = 
-  let flipNumX num = fromJust $ Seq.fromList [95, 94 .. 0] Seq.!? num --Change this to use maxX and y etc
-      flipNumY num = fromJust $ Seq.fromList [95, 94 .. 0] Seq.!? num
+  let flipNumX num = fromJust $ Seq.fromList [maxX, maxX-1 .. 0] Seq.!? num
+      flipNumY num = fromJust $ Seq.fromList [maxY, maxY-1 .. 0] Seq.!? num
    in case flip of
         Horizontal -> V2 (flipNumX x) y
         Vertical -> V2 x (flipNumY y)
@@ -305,6 +294,7 @@ rotateTile amount (MkTile id grid) = MkTile id rotatedGrid
 
 rotateChart :: Int -> M.Map (V2 Int) a -> M.Map (V2 Int) a
 rotateChart amount = translateToOrigin . M.mapKeys (rotateCoord amount)
+  where rotateCoord amount coord = iterate (\ (V2 x y) -> V2 (-y) x) coord !! amount
 
 --0 is no rotation, 1 is 90 degrees clockwise etc
 rotateCoord :: Int -> V2 Int -> V2 Int
