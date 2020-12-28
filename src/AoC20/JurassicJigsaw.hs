@@ -247,14 +247,14 @@ parseTileStr str = MkTile (read id) grid
     id = filter (/= ':') $ words idStr !! 1
 
 flipTile :: Flip -> Tile -> Tile
-flipTile flip (MkTile id grid) = MkTile id (flipGrid flip grid)
+flipTile flip (MkTile id grid) = MkTile id (flipChart flip grid)
 
 flipForDestinationCardinal :: Cardinal -> Tile -> Tile
 flipForDestinationCardinal cardinal tile
   | cardinal `elem` [North, South] = flipTile Horizontal tile
   | cardinal `elem` [West, East] = flipTile Vertical tile
 
-flipChart :: Flip -> Chart -> Chart
+flipChart :: Flip -> M.Map (V2 Int) Char -> M.Map (V2 Int) Char
 flipChart flip chart = M.mapWithKey flipper chart 
   where flipper coord _ = chart M.! flipCoordForChart flip coord max
         max = maxXAndY chart
@@ -267,11 +267,6 @@ flipCoordForChart flip (V2 x y) (V2 maxX maxY) =
         Horizontal -> V2 (flipNumX x) y
         Vertical -> V2 x (flipNumY y)
 
-flipGrid :: Flip -> Grid -> Grid
-flipGrid flip grid = M.mapWithKey flipper grid
-  where
-    flipper coord _ = grid M.! flipCoord flip coord
-
 maxXAndY :: Chart -> V2 Int
 maxXAndY chart = V2 xmax ymax
   where keys = M.keysSet chart
@@ -280,27 +275,12 @@ maxXAndY chart = V2 xmax ymax
         xmax = maximum xs
         ymax = maximum ys
 
-flipCoord :: Flip -> V2 Int -> V2 Int
-flipCoord flip (V2 x y) =
-  let flipNum num = fromJust $ Seq.fromList [9, 8 .. 0] Seq.!? num
-   in case flip of
-        Horizontal -> V2 (flipNum x) y
-        Vertical -> V2 x (flipNum y)
-
 rotateTile :: Int -> Tile -> Tile
-rotateTile amount (MkTile id grid) = MkTile id rotatedGrid
-  where
-    rotatedGrid = M.mapKeys (rotateCoord amount) grid
+rotateTile amount (MkTile id grid) = MkTile id (rotateChart amount grid)
 
 rotateChart :: Int -> M.Map (V2 Int) a -> M.Map (V2 Int) a
 rotateChart amount = translateToOrigin . M.mapKeys (rotateCoord amount)
   where rotateCoord amount coord = iterate (\ (V2 x y) -> V2 (-y) x) coord !! amount
-
---0 is no rotation, 1 is 90 degrees clockwise etc
-rotateCoord :: Int -> V2 Int -> V2 Int
-rotateCoord amount coord = iterate rotatedAboutOrigin coord !! amount
-  where
-    rotatedAboutOrigin (V2 x y) = V2 9 0 + V2 (- y) x
 
 printTile :: Tile -> IO ()
 printTile (MkTile _ grid) = putStr $ renderVectorMap grid
@@ -319,14 +299,6 @@ foldTile macroCoord (MkTile _ grid) = M.foldMapWithKey (foldGrid macroCoord) gri
           newY = (gridSize * macroY + y)
        in M.singleton (V2 newX newY) ch
     gridSize = (+) 1 $ maximum $ map (\(V2 x y) -> x) $ M.keys grid
-
-runInteractive :: PlacementParams -> IO ()
-runInteractive pp@(PP placedTileMap queue) = do
-  putStr $ printPlacedTileMap placedTileMap
-  _ <- getLine
-  let stepped = step pp
-  runInteractive (fromJust stepped)
-  print "done"
 
 readMonster :: IO Chart
 readMonster = do
