@@ -7,13 +7,14 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
 import Text.Trifecta
+import Data.List
 
 aoc21 :: IO ()
 aoc21 = do
   contents <- getInputFile 21
-  let Success result = parseString parseIngredientSpec mempty contents
-  print $ part1 result
-  print "Done"
+  let parsed = parseString parseIngredientSpec mempty contents
+  print $ part1 <$> parsed
+  print $ part2 <$> parsed
 
 type Ingredient = String
 
@@ -33,6 +34,11 @@ part1 ingredientSpec = foldr (\ingredient currentCount -> currentCount + (counts
     where safe = safeIngredients ingredientSpec
           allListedIngredients = foldr (\(il,al) xs -> mappend xs (S.toList il)) [] ingredientSpec
           counts = freqs allListedIngredients
+
+part2 :: IngredientSpec -> String
+part2 ingredientSpec = intercalate "," sorted
+  where simplified = M.toList $ simplifyMap $ simplify ingredientSpec
+        sorted = map fst $ sortOn snd simplified
 
 safeIngredients :: IngredientSpec -> Set Ingredient
 safeIngredients = M.keysSet . M.filter null . simplify
@@ -61,6 +67,22 @@ simplify ingredientSpec = S.foldl removeIfImpossible ingredientMap allSuggestion
           removeIfImpossible mp suggestion'@(ingredient, allergen) = if trySuggestion ingredientSpec suggestion'
                                              then mp
                                              else M.update (Just . S.delete allergen) ingredient mp
+
+simplifyMapStep :: IngredientMap -> IngredientMap
+simplifyMapStep ingredientMap = M.foldlWithKey updateForSingle ingredientMap singles
+    where singles = M.map S.findMin $ M.filter (\a -> length a == 1) ingredientMap
+          updateForSingle mp ingredient allergen = M.mapWithKey (\ingredient' allergens -> 
+                                                      if ingredient' == ingredient
+                                                      then allergens
+                                                      else S.delete allergen allergens
+                                                      ) mp
+
+simplifyMap :: IngredientMap -> Map Ingredient Allergen
+simplifyMap = M.map S.findMin . M.filter (\x -> length x == 1) . last . unfoldr doSimplify
+  where doSimplify :: IngredientMap -> Maybe (IngredientMap, IngredientMap)
+        doSimplify ingredientMap
+          | all (\s -> length s <= 1) ingredientMap = Nothing
+          | otherwise = let simplified = simplifyMapStep ingredientMap in Just (simplified, simplified)
 
 ---Parsing---
 parseIngredientList :: Parser IngredientList
