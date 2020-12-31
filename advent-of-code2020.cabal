@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 14488c52b290241725faf547acbf4148610c6df77edffc835f1450aaa9c12a4e
+-- hash: af787359b0332b0a5f674539912d90ada8c2ecd137e0354445ff895104965872
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
       AoC2.Passwords
       AoC20.JurassicJigsaw
       AoC21.AllergenAssessment
+      AoC22.CrabCombat
       AoC3.Trees
       AoC4.Passport
       AoC5.Boarding
@@ -60,6 +61,7 @@ library
     , directory
     , lens
     , linear
+    , raw-strings-qq
     , reflection
     , regex-tdfa
     , sort
@@ -82,6 +84,7 @@ executable advent-of-code2020-exe
     , directory
     , lens
     , linear
+    , raw-strings-qq
     , reflection
     , regex-tdfa
     , sort
@@ -113,6 +116,7 @@ test-suite advent-of-code2020-test
     , hspec
     , lens
     , linear
+    , raw-strings-qq
     , reflection
     , regex-tdfa
     , sort
