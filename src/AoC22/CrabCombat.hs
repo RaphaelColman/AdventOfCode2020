@@ -39,10 +39,10 @@ playGame :: Game -> Game
 playGame game = last $ unfoldr playUntilWon game
     where playUntilWon gm
             | finished gm = Nothing
-            | otherwise = let next = stepGame' gm in Just (next, next)
+            | otherwise = let next = stepGame gm in Just (next, next)
     
-stepGame' :: Game -> Game
-stepGame' (MkGame player1 player2) = if player1Card > player2Card
+stepGame :: Game -> Game
+stepGame (MkGame player1 player2) = if player1Card > player2Card
                                      then MkGame player1Wins player2Rest
                                      else MkGame player1Rest player2Wins
     where player1Card Seq.:< player1Rest = Seq.viewl player1
