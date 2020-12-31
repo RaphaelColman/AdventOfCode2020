@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f038503eb3d60a6af1d88e8d1879b07ad3b481be3261e678942b38f421ff32be
+-- hash: 14488c52b290241725faf547acbf4148610c6df77edffc835f1450aaa9c12a4e
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       AoC19.MonsterMessages
       AoC2.Passwords
       AoC20.JurassicJigsaw
+      AoC21.AllergenAssessment
       AoC3.Trees
       AoC4.Passport
       AoC5.Boarding
@@ -64,6 +65,7 @@ library
     , sort
     , split
     , text-format-simple
+    , trifecta
   default-language: Haskell2010
 
 executable advent-of-code2020-exe
@@ -85,6 +87,7 @@ executable advent-of-code2020-exe
     , sort
     , split
     , text-format-simple
+    , trifecta
   default-language: Haskell2010
 
 test-suite advent-of-code2020-test
@@ -115,4 +118,5 @@ test-suite advent-of-code2020-test
     , sort
     , split
     , text-format-simple
+    , trifecta
   default-language: Haskell2010
