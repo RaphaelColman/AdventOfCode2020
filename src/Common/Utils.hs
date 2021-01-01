@@ -11,6 +11,8 @@ import System.Directory
 import System.IO
 import Text.Format
 import Debug.Trace
+import Data.Sequence (Seq)
+import qualified Data.Sequence  as Seq
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]
 enumerateMultilineString str
@@ -73,3 +75,9 @@ stepEnum enum times = iterate enumNext enum !! times
 
 prevStepEnum :: (Enum a, Eq a, Bounded a) => a -> Int -> a
 prevStepEnum enum times = iterate enumPrev enum !! times
+
+seqLast :: Seq a -> a
+seqLast s = let rest Seq.:> last = Seq.viewr s in last
+
+seqFirst :: Seq a -> a
+seqFirst s = let first Seq.:< rest = Seq.viewl s in first
