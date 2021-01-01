@@ -32,6 +32,10 @@ dependencies:
 - reflection
 - trifecta
 - raw-strings-qq
+- pointedlist
+- vector
+- finite-typelits
+- primitive
 
 library:
   source-dirs: src

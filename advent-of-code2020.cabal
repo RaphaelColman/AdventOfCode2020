@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: af787359b0332b0a5f674539912d90ada8c2ecd137e0354445ff895104965872
+-- hash: 5a1159ec0ede8b7077b4e92688a9b2198836b5b276b9ee94dc3b08e39d794783
 
 name:           advent-of-code2020
 version:        0.1.0.0
@@ -42,6 +42,7 @@ library
       AoC20.JurassicJigsaw
       AoC21.AllergenAssessment
       AoC22.CrabCombat
+      AoC23.CrabCups
       AoC3.Trees
       AoC4.Passport
       AoC5.Boarding
@@ -59,8 +60,11 @@ library
       base >=4.7 && <5
     , containers
     , directory
+    , finite-typelits
     , lens
     , linear
+    , pointedlist
+    , primitive
     , raw-strings-qq
     , reflection
     , regex-tdfa
@@ -68,6 +72,7 @@ library
     , split
     , text-format-simple
     , trifecta
+    , vector
   default-language: Haskell2010
 
 executable advent-of-code2020-exe
@@ -82,8 +87,11 @@ executable advent-of-code2020-exe
     , base >=4.7 && <5
     , containers
     , directory
+    , finite-typelits
     , lens
     , linear
+    , pointedlist
+    , primitive
     , raw-strings-qq
     , reflection
     , regex-tdfa
@@ -91,6 +99,7 @@ executable advent-of-code2020-exe
     , split
     , text-format-simple
     , trifecta
+    , vector
   default-language: Haskell2010
 
 test-suite advent-of-code2020-test
@@ -113,9 +122,12 @@ test-suite advent-of-code2020-test
     , base >=4.7 && <5
     , containers
     , directory
+    , finite-typelits
     , hspec
     , lens
     , linear
+    , pointedlist
+    , primitive
     , raw-strings-qq
     , reflection
     , regex-tdfa
@@ -123,4 +135,5 @@ test-suite advent-of-code2020-test
     , split
     , text-format-simple
     , trifecta
+    , vector
   default-language: Haskell2010
