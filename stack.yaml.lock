@@ -11,6 +11,20 @@ packages:
       sha256: 026136165778e83cb04c587b3609d95731ccf35da07249c9eb0f29ceb6946cbb
   original:
     hackage: text-format-simple-1.1.0@sha256:5815236396328f556b9896fdcb949d15b485ef05394c9dc846e94b0306cb4036,735
+- completed:
+    hackage: conduino-0.2.2.0@sha256:1fe73859f8d518af7182c76248d0573bf69a6a6e12d79da85438a530f0227c9f,1621
+    pantry-tree:
+      size: 527
+      sha256: 45719113d47d7ce62da867f7d36f7518b925036867ab3a06db7b557a97c8fe43
+  original:
+    hackage: conduino-0.2.2.0@sha256:1fe73859f8d518af7182c76248d0573bf69a6a6e12d79da85438a530f0227c9f,1621
+- completed:
+    hackage: list-transformer-1.0.6@sha256:e214728decb4844b1c6ea0e3243324cfc11ad6da5629d16f06b92f00b6a5bed0,1455
+    pantry-tree:
+      size: 280
+      sha256: 7d2a46b5ade8b57a62888af490d6fb20b217e6fa92b5bf40d53c6e9fd7a3809c
+  original:
+    hackage: list-transformer-1.0.6@sha256:e214728decb4844b1c6ea0e3243324cfc11ad6da5629d16f06b92f00b6a5bed0,1455
 snapshots:
 - completed:
     size: 532835

@@ -36,6 +36,8 @@ dependencies:
 - vector
 - finite-typelits
 - primitive
+- transformers
+- conduino
 
 library:
   source-dirs: src
