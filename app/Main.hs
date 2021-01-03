@@ -6,5 +6,5 @@ import AoC23.CrabCups (aoc23)
 
 main :: IO ()
 main = do
-    aoc23
+    --aoc23
     print "done"
