@@ -17,7 +17,8 @@ import Debug.Trace
 aoc23 :: IO ()
 aoc23 = do
   let params = initParams testInput
-  stepInteractive params
+  print params
+  print $ play 10 params
   print "Done"
 
 type Cups = IntMap Int
@@ -34,7 +35,8 @@ stepInteractive :: Params -> IO ()
 stepInteractive params = do
   print params
   _ <- getLine
-  stepInteractive $ step params
+  --stepInteractive $ step params
+  print "done" --REMOVE
 
 play :: Int -> Params -> Params
 play times params = iterate step params !! times
@@ -46,7 +48,7 @@ step params@(MkParams focus cups) = MkParams newFocus next3Modified
         next3 = cups IM.! next2
         next4 = cups IM.! next3
         focusModified = IM.insert focus next4 cups
-        target = until (\x -> x `notElem` [next1, next2, next3])
+        target = until (\x -> x `notElem` [next1, next2, next3] && x /= 0)
                 (\x -> 
                   if x <= 1 then 9 else x - 1
                   ) 
@@ -55,8 +57,6 @@ step params@(MkParams focus cups) = MkParams newFocus next3Modified
         targetModified = IM.insert target next1 focusModified
         next3Modified = IM.insert next3 targetNext targetModified
         newFocus = next3Modified IM.! focus
-
----Looping logic is still broken!
 
 makeCups :: [Int] -> Cups
 makeCups xs@(start:rest) = res
@@ -75,4 +75,7 @@ puzzleInput :: [Int]
 puzzleInput = [3, 2, 7, 4, 6, 5, 1, 8, 9]
 
 debugInput :: [Int]
-debugInput = [2,8,9,1,5,4,6,7,3]
+debugInput = [1,3,6,7,9,2,5,8,4]
+
+maxNum :: Int
+maxNum = 10000000
