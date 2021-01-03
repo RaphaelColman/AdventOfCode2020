@@ -16,9 +16,8 @@ import Debug.Trace
 
 aoc23 :: IO ()
 aoc23 = do
-  let params = initParams testInput
-  print params
-  print $ play 10 params
+  let params = initParams $ upgradeParams testInput
+  print $ part2 params
   print "Done"
 
 type Cups = IntMap Int
@@ -30,6 +29,12 @@ data Params = MkParams {
 instance Show Params where
   show params@(MkParams focus cups) = show focus ++ show cupList
     where cupList = takeWhile (/=focus) $ iterate (cups IM.!) (cups IM.! focus)
+
+part2 :: Params -> (Int, Int)
+part2 params = (next1, next2)
+  where (MkParams focus cups) = play maxTurns params
+        next1 = cups IM.! 1
+        next2 = cups IM.! next1
 
 stepInteractive :: Params -> IO ()
 stepInteractive params = do
@@ -50,7 +55,7 @@ step params@(MkParams focus cups) = MkParams newFocus next3Modified
         focusModified = IM.insert focus next4 cups
         target = until (\x -> x `notElem` [next1, next2, next3] && x /= 0)
                 (\x -> 
-                  if x <= 1 then 9 else x - 1
+                  if x <= 1 then maxNum else x - 1
                   ) 
                 (focus - 1)
         targetNext = cups IM.! target
@@ -62,11 +67,13 @@ makeCups :: [Int] -> Cups
 makeCups xs@(start:rest) = res
   where res = IM.fromSet mkcup $ IS.fromList xs
         nexts = IM.fromList $ zip xs rest
-        max' = maximum xs --Might need to hardcode this
         mkcup val = IM.findWithDefault start val nexts
 
 initParams :: [Int] -> Params
 initParams xs@(start:_) = MkParams start $ makeCups xs
+
+upgradeParams :: [Int] -> [Int]
+upgradeParams xs = xs ++ [10..maxNum]
 
 testInput :: [Int]
 testInput = [3, 8, 9, 1, 2, 5, 4, 6, 7]
@@ -78,4 +85,7 @@ debugInput :: [Int]
 debugInput = [1,3,6,7,9,2,5,8,4]
 
 maxNum :: Int
-maxNum = 10000000
+maxNum = 1000000
+
+maxTurns :: Int
+maxTurns = 10000000
