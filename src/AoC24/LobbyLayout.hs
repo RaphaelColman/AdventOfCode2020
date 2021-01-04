@@ -106,8 +106,3 @@ parseComposite = do
     "ne" -> return NorthEast
     "nw" -> return NorthWest
     _ -> fail "Invalid composite direction"
-
---Examples
-itself = "nwwswee"
-
-southEast = "esew"
