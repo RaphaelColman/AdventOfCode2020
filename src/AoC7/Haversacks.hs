@@ -4,17 +4,13 @@ import           Common.Utils
 import           Data.List.Split
 import qualified Data.Map        as M
 import qualified Data.Set        as S
+import Text.Trifecta
 
 aoc7 :: IO ()
 aoc7 = do
   contents <- getInputFile 7
-  let bagRules = parseInput contents
-  let bagToFind = BG "shiny" "gold"
-  print $ length $ recursiveContainersForBag bagToFind bagRules
-  print $ numberOfBagsForBag bagToFind bagRules
-  let ancestors = M.lookup bagToFind $ allAncestors bagRules
-  print $ length <$> ancestors
-  print $ M.lookup bagToFind $ usageCounts bagRules
+  let p str = parseString parseBag mempty str
+  print $ p "faded blue bags"
 
 type BagRules = M.Map Bag (M.Map Bag Int)
 
@@ -24,6 +20,19 @@ data Bag = BG
     colour :: String
   }
   deriving (Show, Eq, Ord)
+
+
+parseBag :: Parser Bag
+parseBag = do
+  hue <- some letter
+  whiteSpace 
+  colour <- some letter
+  whiteSpace 
+  string "bag"
+  pure $ BG hue colour
+
+parseBagRule :: Parser BagRules
+parseBagRule = undefined
 
 parseInput :: String -> BagRules
 parseInput = M.fromList . map parseLine . lines
