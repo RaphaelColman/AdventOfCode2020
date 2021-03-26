@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 module AoC7.Haversacks where
 
 import           Common.Utils
@@ -6,17 +7,19 @@ import qualified Data.Map        as M
 import qualified Data.Set        as S
 import Text.Trifecta
 import Control.Applicative ((<|>))
+import Data.Monoid
 
 aoc7 :: IO ()
 aoc7 = do
   contents <- getInputFile 7
-  let p parser str = parseString parser mempty str
-  --print $ p parseBag "wavy tan bags."
-  --print $ p parseNumBags "2 dull crimson bags"
-  --print $ p parseBagMap "2 mirrored green bags, 2 dull crimson bags, 2 drab tan bags, 1 vibrant coral bag."
-  print $ p parseBagRule "dotted plum bags contain 2 mirrored green bags, 2 dull crimson bags, 2 drab tan bags, 1 vibrant coral bag."
-  print $ p parseBagRule "drab tomato bags contain no other bags."
-  print $ p parseBagRules contents
+  --let p parser str = parseString parser mempty str
+  --print $ p parseBagRules contents
+  let bagRules = parseString parseBagRules mempty contents
+  let bagToSearch = BG "shiny" "gold"
+  print $ numberOfBagsForBag bagToSearch <$> bagRules
+  let allSolutions = betterNumberOfBagsForBag <$> bagRules
+  print $ M.lookup bagToSearch <$> allSolutions
+  print "done"
 
 type BagRules = M.Map Bag (M.Map Bag Int)
 
@@ -100,11 +103,16 @@ recursiveContainersForBag = go S.empty
 
 numberOfBagsForBag :: Bag -> BagRules -> Int
 numberOfBagsForBag bag bagRules
-  | null childBags = 0
-  | otherwise = numberOfChildBags + grandChildren
-  where childBags = M.findWithDefault M.empty bag bagRules
-        numberOfChildBags = M.foldl (+) 0 childBags
-        grandChildren = M.foldlWithKey (\count bag' number' -> count + number' * numberOfBagsForBag bag' bagRules) 0 childBags
+  | null children = 0
+  | otherwise = getSum (M.foldMapWithKey combine children)
+  where children = M.findWithDefault M.empty bag bagRules
+        combine bag' count = Sum (count + count * numberOfBagsForBag bag' bagRules)
+
+betterNumberOfBagsForBag :: BagRules -> M.Map Bag Int
+betterNumberOfBagsForBag bagRules = memo
+  where memo = M.mapWithKey countBags bagRules
+        countBags bag count = getSum $ M.foldMapWithKey combine count
+        combine bag' count' = Sum (count' + count' * M.findWithDefault 0 bag' memo)
 
 
 --Another solution involve recursive knot tying
